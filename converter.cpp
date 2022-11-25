@@ -127,8 +127,10 @@ void Converter::loadData() {
     QDir().mkdir(this->outputResourcePackPath);
 
     // loading resource pack configuration
-    QFile packCofigFile = QFile(this->inputResourcePackPath + "/pack.mcmeta");
-    QJsonDocument packConfigJsonDoc = QJsonDocument::fromJson(packCofigFile.readAll());
+    QFile packConfigFile = QFile(this->inputResourcePackPath + "/pack.mcmeta");
+    packConfigFile.open(QFile::ReadOnly);
+    QJsonDocument packConfigJsonDoc = QJsonDocument::fromJson(packConfigFile.readAll());
+    packConfigFile.close();
 
     if (packConfigJsonDoc.isObject()) {
         this->resourcePackConfig = packConfigJsonDoc.object();
@@ -141,10 +143,51 @@ void Converter::loadData() {
     this->loadIdentityPatterns();
 }
 void Converter::loadIdentityPatterns() {
-    QFile javaIdentityPackFile = QFile("identity_pattern_java_" + QString::number(this->resourcePackConfigFormat));
-    QJsonDocument javaIdentityPackJsonDoc = QJsonDocument::fromJson(javaIdentityPackFile.readAll());
+    QFile javaIdentityMapFile = QFile("identity_pattern_java_" + QString::number(this->resourcePackConfigFormat) + ".json");
+    QFile bedrockIdentityMapFile = QFile("identity_pattern_bedrock_" + QString::number(this->resourcePackConfigFormat) + ".json");
 
-    if (javaIdentityPackJsonDoc.isObject()) {
-        this->javaIdentityMap = javaIdentityPackJsonDoc.object();
+    javaIdentityMapFile.open(QFile::ReadOnly);
+    bedrockIdentityMapFile.open(QFile::ReadOnly);
+
+    QJsonDocument javaIdentityMapJsonDoc = QJsonDocument::fromJson(javaIdentityMapFile.readAll());
+    QJsonDocument bedrockIdentityMapJsonDoc = QJsonDocument::fromJson(bedrockIdentityMapFile.readAll());
+
+    javaIdentityMapFile.close();
+    bedrockIdentityMapFile.close();
+
+    if (javaIdentityMapJsonDoc.isObject()) {
+        this->javaIdentityMap = javaIdentityMapJsonDoc.object();
+    }
+    if (bedrockIdentityMapJsonDoc.isObject()) {
+        this->bedrockIdentityMap = bedrockIdentityMapJsonDoc.object();
+    }
+}
+
+void Converter::startConversion() {
+    foreach(const QFileInfo info, QDir(this->inputResourcePackPath).entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot)) {
+        if (info.isFile()) convertFile(info, this->javaIdentityMap[info.fileName()]);
+        else if (info.isDir()) convertDir(info, this->javaIdentityMap[info.fileName()]);
+    }
+}
+
+void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
+    if (identityRef.isNull() || identityRef.isUndefined()) {
+        return;
+    }
+    QString identity = identityRef.toString();
+
+    qDebug() << "Converting file:" << fileInfo.fileName() << "| ID:" << identity;
+}
+void Converter::convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef) {
+    qDebug() << "Converting directory:" << dirInfo.absoluteFilePath();
+
+    if (identityMapRef.isNull() || identityMapRef.isUndefined()) {
+        return;
+    }
+    QJsonObject identityMap = identityMapRef.toObject();
+
+    foreach(const QFileInfo info, QDir(dirInfo.absoluteFilePath()).entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot)) {
+        if (info.isFile()) convertFile(info, identityMap[info.fileName()]);
+        else if (info.isDir()) convertDir(info, identityMap[info.fileName()]);
     }
 }

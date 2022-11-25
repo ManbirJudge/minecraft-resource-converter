@@ -1,0 +1,11 @@
+{
+    "assets": {
+        "minecraft": {
+            "textures": {
+                "block": {
+                    "acacia_door_bottom.png": "acia_door_bottom"
+                }
+            }
+        }
+    }
+}

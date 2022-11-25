@@ -59,6 +59,9 @@ private:
 
     void loadData();
     void loadIdentityPatterns();
+
+    void convertFile(QFileInfo fileInfo, QJsonValueRef identityRef);
+    void convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef);
 };
 
 #endif
