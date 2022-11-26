@@ -175,8 +175,14 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
         return;
     }
     QString identity = identityRef.toString();
+    QString relBedrockPath = this->bedrockIdentityMap[identity].toString();
 
-    qDebug() << "Converting file:" << fileInfo.fileName() << "| ID:" << identity;
+    QDir().mkpath(this->outputResourcePackPath + "/" + relBedrockPath.split('/').first(relBedrockPath.split('/').length() - 1).join('/'));
+
+    QFile file = QFile(fileInfo.absoluteFilePath());
+    file.copy(this->outputResourcePackPath + "/" + relBedrockPath);
+
+    qDebug() << "Converted:" << fileInfo.fileName() << "| ID:" << identity << " | To: " << this->outputResourcePackPath + "/" + this->bedrockIdentityMap[identity].toString();
 }
 void Converter::convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef) {
     qDebug() << "Converting directory:" << dirInfo.absoluteFilePath();

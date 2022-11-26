@@ -4,8 +4,26 @@
             "textures": {
                 "block": {
                     "acacia_door_bottom.png": "acia_door_bottom"
-                }
+                },
+                "colormap": {},
+                "environment": {},
+                "font": {},
+                "gui": {
+                    "title": {
+                        "background": {}
+                    },
+                    "container": {
+                        "creative_inventory": {}
+                    }
+                },
+                "item": {},
+                "map": {},
+                "misc": {},
+                "mob_effect": {},
+                "models": {},
+                "entity": {}
             }
-        }
+        },
+        "texts": {}
     }
 }
