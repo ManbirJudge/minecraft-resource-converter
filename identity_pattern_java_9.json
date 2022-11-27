@@ -3,7 +3,7 @@
         "minecraft": {
             "textures": {
                 "block": {
-                    "acacia_door_bottom.png": "acia_door_bottom"
+                    "acacia_door_bottom.png": "acacia_door_bottom"
                 },
                 "colormap": {},
                 "environment": {},

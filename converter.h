@@ -33,7 +33,10 @@ public:
         int outputResourcePackType
     );
 
-    void unzipFile(QString zipFilePath, QString unzippedDirectoryPath);
+    void unzipFile(QString srcFilePath, QString unzippedDirectoryPath);
+    void zipDirectory(QString srcDirPath, QString zippedFilePath);
+    void addDirectoryToZip(struct zip* zipArchive, QFileInfo dirInfo, QDir rootSrcDir);
+
     void copyDir(QString directory, QString toDirectory);
 
     void startConversion();
