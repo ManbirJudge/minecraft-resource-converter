@@ -17,74 +17,71 @@ Converter::Converter(
     this->loadData();
 }
 
-void Converter::unzipFile(QString zipFilePath_, QString unzippedDirectoryPath_) {
-    std::string zipFilePath = zipFilePath_.toStdString();
-    std::string unzippedDirectoryPath = unzippedDirectoryPath_.toStdString();
-
-    struct zip *zip;
-    struct zip_file *zipFile;
-    struct zip_stat zipFileStats;
+void Converter::unzipFile(QString srcFilePath_, QString destinationDirectoryPath_) {
+    std::string srcFilePath = srcFilePath_.toStdString();
+    std::string destinationDirectoryPath = destinationDirectoryPath_.toStdString();
 
     char bufferStr[100];
-    int error;
-    int index, length;
-    int fd;
-    long long sum;
+    int error = 0;
+    int fileHandle;
 
-    if (not QDir().exists(unzippedDirectoryPath_)) {
-        QDir().mkpath(unzippedDirectoryPath_);
+    struct zip *zipArchive = zip_open(srcFilePath.c_str(), 0, &error);
+    struct zip_file *zippedFile;
+    struct zip_stat zippedFileStats;
+
+    if (not QDir().exists(destinationDirectoryPath_)) {
+        QDir().mkpath(destinationDirectoryPath_);
     }
 
-    if ((zip = zip_open(zipFilePath.c_str(), 0, &error)) == NULL) {
+    if (zipArchive == NULL) {
         zip_error_to_str(bufferStr, sizeof(bufferStr), error, errno);
-        std::cout << "Can not open the zip file: " << error <<  ":\n" << bufferStr;
+        std::cout << "[ERROR] Can not open the zip file: " << error <<  ":\n" << bufferStr;
     }
 
-    for (index = 0; index < zip_get_num_entries(zip, 0); index++) {
-        if (zip_stat_index(zip, index, 0, &zipFileStats) == 0) {
-            length = strlen(zipFileStats.name);
+    for (int index = 0; index < zip_get_num_entries(zipArchive, 0); index++) {
+        if (zip_stat_index(zipArchive, index, 0, &zippedFileStats) == 0) {
+            int zipFileNameLength = strlen(zippedFileStats.name);
 
-            // qDebug() << "Name:" << zipFileStats.name;
-
-            if (zipFileStats.name[length - 1] == '/') {
-                // qDebug() << "Making" << unzippedDirectoryPath_ + "/" + zipFileStats.name << "directory from zip file.";
-                QDir().mkpath(unzippedDirectoryPath_ + "/" + zipFileStats.name);
-            } else {
-                zipFile = zip_fopen_index(zip, index, 0);
-
-                if (!zipFile) {
-                    qDebug() << "Can not open the file in zip archive.";
+            if (zippedFileStats.name[zipFileNameLength - 1] == '/') {  // i.e. folder
+                QDir().mkpath(destinationDirectoryPath_ + "/" + zippedFileStats.name);
+            } else {  // i.e. file
+                zippedFile = zip_fopen_index(zipArchive, index, 0);
+                if (zippedFile == NULL) {
+                    qDebug() << "[ERROR] Can not open the file in zip archive.";
                     continue;
                 }
 
-                fd = open((unzippedDirectoryPath + "/" + zipFileStats.name).c_str(), O_RDWR | O_TRUNC | O_CREAT, 0644);
-                if (fd < 0) {
-                    qDebug() << "Can not create the file (into which zipped data is to be extracted).";
+                fileHandle = open((destinationDirectoryPath + "/" + zippedFileStats.name).c_str(), O_RDWR | O_TRUNC | O_CREAT | O_BINARY, 0644);
+                if (fileHandle < 0) {
+                    qDebug() << "[ERROR] Can not create the file (into which zipped data is to be extracted).";
                     continue;
                 }
 
-                sum = 0;
-                while (sum != (long long) zipFileStats.size) {
-                    length = zip_fread(zipFile, bufferStr, 100);
-                    if (length < 0) {
-                        fprintf(stderr, "boese, boese/n");
-                        exit(102);
+                // zip_uint64_t totalFileDataLength = 0;
+                while (true) {
+                    zip_int64_t fileDataLength = zip_fread(zippedFile, bufferStr, 100);
+                    if (fileDataLength == 0) { // EOF character
+                        break;
                     }
-                    write(fd, bufferStr, length);
-                    sum += length;
+
+                    if (fileDataLength < 0) {
+                        qDebug() << "[ERROR] Can not read the zipped file.";
+                        exit(1);
+                    }
+
+                    write(fileHandle, bufferStr, (size_t) fileDataLength);
                 }
 
-
-                close(fd);
-                zip_fclose(zipFile);
+                close(fileHandle);
+                zip_fclose(zippedFile);
             }
         } else {
-            printf("File[%s] Line[%d]/n", __FILE__, __LINE__);
+            qDebug() << "IDK what is here 🫥.";
         }
     }
 
-    if (zip_close(zip) == -1) {
-        qDebug() << "[DEBUG] Cannot close the zip file.";
+    if (zip_close(zipArchive) == -1) {
+        qDebug() << "[ERROR] Cannot close the zip file.";
     }
 }
 void Converter::zipDirectory(QString srcDirPath_, QString zippedFilePath_) {
@@ -106,10 +103,11 @@ void Converter::zipDirectory(QString srcDirPath_, QString zippedFilePath_) {
 
     foreach (QFileInfo fileInfo, srcDir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
         if (fileInfo.isFile()) {
-            QFile file = QFile(fileInfo.absoluteFilePath());
-            file.open(QFile::ReadOnly);
+            std::ifstream fileStream;
+            fileStream.open(fileInfo.canonicalFilePath().toStdString(), std::ios::binary);
+            std::string fileContent((std::istreambuf_iterator<char>(fileStream)), (std::istreambuf_iterator<char>()));
 
-            zipBuffer = zip_source_buffer_create(file.readAll().toStdString().c_str(), file.readAll().length(), 0, 0);
+            zipBuffer = zip_source_buffer(zipArchive, fileContent.c_str(), fileContent.length(), 0);
             if (zipBuffer == NULL) {
                 qDebug() << "Failed to create source buffer for" << fileInfo.fileName() + ".";
             }
@@ -124,7 +122,7 @@ void Converter::zipDirectory(QString srcDirPath_, QString zippedFilePath_) {
                 qDebug() << "Failed to add" << fileInfo.fileName() << "to archive.";
             }
 
-            file.close();
+            fileStream.close();
         } else if (fileInfo.isDir()) {
             this->addDirectoryToZip(zipArchive, fileInfo, srcDir);
         }
@@ -143,10 +141,11 @@ void Converter::addDirectoryToZip(struct zip* zipArchive, QFileInfo srcDirInfo, 
 
     foreach (QFileInfo fileInfo, srcDir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
         if (fileInfo.isFile()) {
-            QFile file = QFile(fileInfo.canonicalFilePath());
-            file.open(QFile::ReadOnly);
+            std::ifstream fileStream;
+            fileStream.open(fileInfo.canonicalFilePath().toStdString(), std::ios::binary);
+            std::string fileContent((std::istreambuf_iterator<char>(fileStream)), (std::istreambuf_iterator<char>()));
 
-            zipBuffer = zip_source_buffer_create(file.readAll().toStdString().c_str(), file.readAll().length(), 0, 0);
+            zipBuffer = zip_source_buffer(zipArchive, fileContent.c_str(), fileContent.length(), 0);
             if (zipBuffer == NULL) {
                 qDebug() << "Failed to create source buffer for" << fileInfo.fileName() + ".";
             }
@@ -161,7 +160,7 @@ void Converter::addDirectoryToZip(struct zip* zipArchive, QFileInfo srcDirInfo, 
                 qDebug() << "Failed to add" << fileInfo.fileName() << "to archive.";
             }
 
-            file.close();
+            fileStream.close();
         } else if (fileInfo.isDir()) {
             this->addDirectoryToZip(zipArchive, fileInfo, rootSrcDir);
         }
@@ -259,7 +258,7 @@ void Converter::startConversion() {
 
     if (this->outputResourcePackType == 0) {
         qDebug() << "[DEBUG] Zipping the output resource pack into .mcpack zip archive.";
-        this->zipDirectory(this->outputResourcePackPath, this->outputDirPath + "/FFDFD" + this->resourcePackName + ".zip");
+        this->zipDirectory(this->outputResourcePackPath, this->outputDirPath + "/" + this->resourcePackName + ".mcpack");
     } else {
         // TODO:  copy directory
     }

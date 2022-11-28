@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent):
     ui->javaResourcePackTypeCombo->addItems(this->JAVA_RESOURCE_PACK_TYPES);
     ui->bedrockResourcePackTypeCombo->addItems(this->BEDROCK_RESOURCE_PACK_TYPES);
 
-    ui->javaResourcePackTypeCombo->setCurrentIndex(1);
+    ui->javaResourcePackTypeCombo->setCurrentIndex(0);
     ui->bedrockResourcePackTypeCombo->setCurrentIndex(0);
 
     ui->javaResourcePackLineEdit->setText(this->javaResourcePackPath);

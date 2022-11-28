@@ -1,9 +1,42 @@
 {
+    "pack.mcmeta": "$convert_meta",
+    "pack.png": "pack_icon",
     "assets": {
         "minecraft": {
+            "blockstates": {},
+            "font": {},
+            "lang": {},
+            "models": {},
+            "particles": {},
+            "shaders": {},
+            "texts": {},
             "textures": {
                 "block": {
-                    "acacia_door_bottom.png": "acacia_door_bottom"
+                    "acacia_door_bottom.png": "acacia_door_bottom",
+                    "acacia_door_top.png": "acacia_door_upper",
+                    "acacia_leaves.png": "acacia_leaves",
+                    "acacia_log.png": "acacia_log",
+                    "acacia_log_top.png": "acacia_log_top",
+                    "acacia_planks.png": "acacia_planks",
+                    "acacia_sapling.png": "acacia_sapling",
+                    "acaica_trapdoor.png": "acaica_trapdoor",
+                    "activator_rail.png": "activator_rail",
+                    "activator_rail_on.png": "powered_activator_rail",
+                    "allium.png": "allium",
+                    "amethyst_block.png": "amethyst_block",
+                    "amethyst_cluster.png": "amethyst_cluster",
+                    "ancient_debris_side.png": "ancient_debris_side",
+                    "ancient_debris_top.png": "ancient_debris_top",
+                    "andesite.png": "andesite",
+                    "anvil.png": "anvil",
+                    "anvil_top.png": "anvil_top_damage_0",
+                    "attached_melon_stem.png": "connected_melon_stem",
+                    "attached_pumking_stem.png": "connected_pumking_stem",
+                    "azalea_leaves.png": "azalea_leaves",
+                    "azalea_plant.png": "azalea_plant",
+                    "azalea_side.png": "azalea_side",
+                    "azalea_top.png": "azalea_top",
+                    "azure_bluet.png": "azure_bluet"
                 },
                 "colormap": {},
                 "environment": {},
@@ -24,6 +57,6 @@
                 "entity": {}
             }
         },
-        "texts": {}
+        "realms": {}
     }
 }
