@@ -224,6 +224,7 @@ void Converter::loadData() {
     }
 
     this->resourcePackConfigFormat = this->resourcePackConfig["pack"].toObject()["pack_format"].toInt(0);
+    this->resourcePackDesc = this->resourcePackConfig["pack"].toObject()["description"].toString();
 
     // loading conversion pattern
     this->loadIdentityPatterns();
@@ -262,6 +263,8 @@ void Converter::startConversion() {
     } else {
         // TODO:  copy directory
     }
+
+    qDebug() << "[DEBUG] Conversion done.";
 }
 
 void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
@@ -269,14 +272,58 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
         return;
     }
     QString identity = identityRef.toString();
-    QString relBedrockPath = this->bedrockIdentityMap[identity].toString();
+    QString bedrockEquivelent = this->bedrockIdentityMap[identity].toString();
 
-    QDir().mkpath(this->outputResourcePackPath + "/" + relBedrockPath.split('/').first(relBedrockPath.split('/').length() - 1).join('/'));
+    if (bedrockEquivelent.startsWith("$")) {
+         bedrockEquivelent = bedrockEquivelent.remove("$");
 
-    QFile file = QFile(fileInfo.absoluteFilePath());
-    file.copy(this->outputResourcePackPath + "/" + relBedrockPath);
+         if (bedrockEquivelent == "convert_meta") {
+             QJsonObject bedrockManifest = QJsonObject();
+             QJsonObject bedrockManifestHeader = QJsonObject();
+             QJsonArray bedrockManifestModules = QJsonArray();
+             QJsonObject bedrockManifestModule = QJsonObject();
 
-    // qDebug() << "Converted:" << fileInfo.fileName() << "| ID:" << identity << " | To: " << this->outputResourcePackPath + "/" + this->bedrockIdentityMap[identity].toString();
+             QJsonArray bedrockManifestResourceVersion = QJsonArray();
+             QJsonArray bedrockManifestMinEngineVersion = QJsonArray();
+
+             bedrockManifestResourceVersion.append(1);
+             bedrockManifestResourceVersion.append(0);
+             bedrockManifestResourceVersion.append(0);
+
+             bedrockManifestMinEngineVersion.append(1);
+             bedrockManifestMinEngineVersion.append(19);
+             bedrockManifestMinEngineVersion.append(40);
+
+             bedrockManifestModule.insert("description", this->resourcePackDesc);
+             bedrockManifestModule.insert("type", "resources");
+             bedrockManifestModule.insert("uuid", "743f6949-53be-44b6-b326-398005028813");
+             bedrockManifestModule.insert("version", bedrockManifestResourceVersion);
+
+             bedrockManifestModules.append(bedrockManifestModule);
+
+             bedrockManifestHeader.insert("description", this->resourcePackDesc);
+             bedrockManifestHeader.insert("name", this->resourcePackName);
+             bedrockManifestHeader.insert("uuid", "743f6949-53be-44b6-b326-398005028819");
+             bedrockManifestHeader.insert("version", bedrockManifestResourceVersion);
+             bedrockManifestHeader.insert("min_engine_version", bedrockManifestMinEngineVersion);
+
+             bedrockManifest.insert("format_version", 2);
+             bedrockManifest.insert("header", bedrockManifestHeader);
+             bedrockManifest.insert("modules", bedrockManifestModules);
+
+             QFile bedrockManifestFile = QFile(this->outputResourcePackPath + "/manifest.json");
+             bedrockManifestFile.open(QFile::WriteOnly);
+
+             bedrockManifestFile.write(QJsonDocument(bedrockManifest).toJson());
+
+             bedrockManifestFile.close();
+         }
+    } else {
+        QDir().mkpath(this->outputResourcePackPath + "/" + bedrockEquivelent.split('/').first(bedrockEquivelent.split('/').length() - 1).join('/'));
+
+        QFile file = QFile(fileInfo.absoluteFilePath());
+        file.copy(this->outputResourcePackPath + "/" + bedrockEquivelent);
+    }
 }
 void Converter::convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef) {
     // qDebug() << "Converting directory:" << dirInfo.absoluteFilePath();

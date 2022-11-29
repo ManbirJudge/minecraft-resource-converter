@@ -4,6 +4,7 @@
 #include <QString>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QDir>
 
 #include <iostream>
@@ -21,6 +22,8 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <functional>
+
 #include <zip.h>
 
 class Converter
@@ -49,6 +52,7 @@ private:
     QString inputFileName;
 
     QString resourcePackName;
+    QString resourcePackDesc;
     QJsonObject resourcePackConfig;
     int resourcePackConfigFormat;
 

@@ -1,4 +1,5 @@
 {
+  "pack_meta": "$convert_meta",
   "pack_icon": "pack_icon.png",
   "acacia_door_bottom": "textures/blocks/door_acacia_lower.png",
   "acacia_door_upper": "textures/blocks/door_acacia_upper.png",
@@ -22,7 +23,6 @@
   "azalea_plant": "textures/blocks/azalea_plant.png",
   "azalea_side": "textures/blocks/azalea_side.png",
   "azalea_top": "textures/blocks/azalea_top.png",
-  
   "bamboo_leaf": "textures/blocks/bamboo_leaf.png",
   "bamboo_single_leaf": "textures/blocks/bamboo_singleleaf.png",
   "bamboo_small_leaf": "textures/blocks/bamboo_small_leaf.png",
@@ -53,7 +53,6 @@
   "bell_bottom": "textures/blocks/bell_bottom.png",
   "bell_side": "textures/blocks/bell_side.png",
   "bell_top": "textures/blocks/bell_top.png",
-  
   "87911097143110352181019": "textures/blocks/big_dripleaf_side1.png",
   "54488480175188664439": "textures/blocks/big_dripleaf_stem.png",
   "03108703104190710544171": "textures/blocks/big_dripleaf_side2.png",
