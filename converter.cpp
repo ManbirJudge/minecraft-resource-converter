@@ -1,5 +1,23 @@
 #include "converter.h"
 
+std::string get_uuid() {
+    static std::random_device dev;
+    static std::mt19937 rng(dev());
+
+    std::uniform_int_distribution<int> dist(0, 15);
+
+    const char *v = "0123456789abcdef";
+    const bool dash[] = { 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0 };
+
+    std::string res;
+    for (int i = 0; i < 16; i++) {
+        if (dash[i]) res += "-";
+        res += v[dist(rng)];
+        res += v[dist(rng)];
+    }
+    return res;
+}
+
 Converter::Converter(
     QString inputFilePath_,
     QString outputDirPath_,
@@ -45,6 +63,8 @@ void Converter::unzipFile(QString srcFilePath_, QString destinationDirectoryPath
             if (zippedFileStats.name[zipFileNameLength - 1] == '/') {  // i.e. folder
                 QDir().mkpath(destinationDirectoryPath_ + "/" + zippedFileStats.name);
             } else {  // i.e. file
+                QDir().mkpath(destinationDirectoryPath_ + "/" + QString(zippedFileStats.name).split("/").first(QString(zippedFileStats.name).split("/").length() - 1).join("/"));
+
                 zippedFile = zip_fopen_index(zipArchive, index, 0);
                 if (zippedFile == NULL) {
                     qDebug() << "[ERROR] Can not open the file in zip archive.";
@@ -141,9 +161,10 @@ void Converter::addDirectoryToZip(struct zip* zipArchive, QFileInfo srcDirInfo, 
 
     foreach (QFileInfo fileInfo, srcDir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
         if (fileInfo.isFile()) {
-            std::ifstream fileStream;
-            fileStream.open(fileInfo.canonicalFilePath().toStdString(), std::ios::binary);
-            std::string fileContent((std::istreambuf_iterator<char>(fileStream)), (std::istreambuf_iterator<char>()));
+            QFile file = QFile(fileInfo.canonicalFilePath());
+            file.open(QFile::ReadOnly);
+
+            std::string fileContent = file.readAll().toStdString();
 
             zipBuffer = zip_source_buffer(zipArchive, fileContent.c_str(), fileContent.length(), 0);
             if (zipBuffer == NULL) {
@@ -160,7 +181,7 @@ void Converter::addDirectoryToZip(struct zip* zipArchive, QFileInfo srcDirInfo, 
                 qDebug() << "Failed to add" << fileInfo.fileName() << "to archive.";
             }
 
-            fileStream.close();
+            file.close();
         } else if (fileInfo.isDir()) {
             this->addDirectoryToZip(zipArchive, fileInfo, rootSrcDir);
         }
@@ -258,8 +279,8 @@ void Converter::startConversion() {
     }
 
     if (this->outputResourcePackType == 0) {
-        qDebug() << "[DEBUG] Zipping the output resource pack into .mcpack zip archive.";
-        this->zipDirectory(this->outputResourcePackPath, this->outputDirPath + "/" + this->resourcePackName + ".mcpack");
+        // qDebug() << "[DEBUG] Zipping the output resource pack into .mcpack zip archive.";
+        // this->zipDirectory(this->outputResourcePackPath, this->outputDirPath + "/" + this->resourcePackName + ".mcpack");
     } else {
         // TODO:  copy directory
     }
@@ -278,6 +299,7 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
          bedrockEquivelent = bedrockEquivelent.remove("$");
 
          if (bedrockEquivelent == "convert_meta") {
+
              QJsonObject bedrockManifest = QJsonObject();
              QJsonObject bedrockManifestHeader = QJsonObject();
              QJsonArray bedrockManifestModules = QJsonArray();
@@ -296,14 +318,14 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
 
              bedrockManifestModule.insert("description", this->resourcePackDesc);
              bedrockManifestModule.insert("type", "resources");
-             bedrockManifestModule.insert("uuid", "743f6949-53be-44b6-b326-398005028813");
+             bedrockManifestModule.insert("uuid", QString(get_uuid().c_str()));
              bedrockManifestModule.insert("version", bedrockManifestResourceVersion);
 
              bedrockManifestModules.append(bedrockManifestModule);
 
              bedrockManifestHeader.insert("description", this->resourcePackDesc);
              bedrockManifestHeader.insert("name", this->resourcePackName);
-             bedrockManifestHeader.insert("uuid", "743f6949-53be-44b6-b326-398005028819");
+             bedrockManifestHeader.insert("uuid", QString(get_uuid().c_str()));
              bedrockManifestHeader.insert("version", bedrockManifestResourceVersion);
              bedrockManifestHeader.insert("min_engine_version", bedrockManifestMinEngineVersion);
 
@@ -319,10 +341,13 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
              bedrockManifestFile.close();
          }
     } else {
-        QDir().mkpath(this->outputResourcePackPath + "/" + bedrockEquivelent.split('/').first(bedrockEquivelent.split('/').length() - 1).join('/'));
-
+        QStringList newPaths = bedrockEquivelent.split("%and%");
         QFile file = QFile(fileInfo.absoluteFilePath());
-        file.copy(this->outputResourcePackPath + "/" + bedrockEquivelent);
+
+        foreach(QString newPath, newPaths) {
+            QDir().mkpath(this->outputResourcePackPath + "/" + newPath.split('/').first(newPath.split('/').length() - 1).join('/'));
+            file.copy(this->outputResourcePackPath + "/" + newPath);
+        }
     }
 }
 void Converter::convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef) {

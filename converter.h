@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <functional>
+#include <random>
 
 #include <zip.h>
 

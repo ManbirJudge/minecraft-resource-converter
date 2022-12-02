@@ -38,7 +38,7 @@ private:
     const QStringList JAVA_RESOURCE_PACK_TYPES = { "Zip File (.zip)", "Folder" };
     const QStringList BEDROCK_RESOURCE_PACK_TYPES = { "McPack (.mcpack)", "Folder" };
 
-    QString javaResourcePackPath = "C:/Users/manbi/Downloads/Faithful 32x.zip";
+    QString javaResourcePackPath = "C:/Users/manbi/Downloads/Faithful 64x.zip";
     QString bedrockResourcePackPath = "C:/Users/manbi/Downloads";
 
     QString javaResourcePackType = this->BEDROCK_RESOURCE_PACK_TYPES[0];
