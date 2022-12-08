@@ -3,8 +3,10 @@
 
 #include <QMainWindow>
 #include <QFileDialog>
+#include <QMessageBox>
 
 #include <converter.h>
+#include <settings_dialog.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -32,7 +34,11 @@ private slots:
     void aboutDevBtnClicked();
     void helpBtnClicked();
 
+    void settingsDialogClosed(int result);
+
 private:
+    void loadSettings();
+
     Ui::MainWindow *ui;
 
     const QStringList JAVA_RESOURCE_PACK_TYPES = { "Zip File (.zip)", "Folder" };
@@ -43,5 +49,7 @@ private:
 
     QString javaResourcePackType = this->BEDROCK_RESOURCE_PACK_TYPES[0];
     QString bedrockResourcePackType = this->JAVA_RESOURCE_PACK_TYPES[0];
+
+    QJsonObject settings;
 };
 #endif

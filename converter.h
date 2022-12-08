@@ -40,11 +40,14 @@ public:
 
     void unzipFile(QString srcFilePath, QString unzippedDirectoryPath);
     void zipDirectory(QString srcDirPath, QString zippedFilePath);
-    void addDirectoryToZip(struct zip* zipArchive, QFileInfo dirInfo, QDir rootSrcDir);
+    void addDirectoryToZip(zip_t* zipArchive, zip_source_t* zipSource, QFileInfo dirInfo, QDir rootSrcDir);
 
     void copyDir(QString directory, QString toDirectory);
 
     void startConversion();
+
+signals:
+    void conversionProgress(int currentFile, int totalFiles, QString fileName);
 
 private:
     QString inputFilePath;
@@ -57,8 +60,8 @@ private:
     QJsonObject resourcePackConfig;
     int resourcePackConfigFormat;
 
-    QString inputResourcePackPath;
-    QString outputResourcePackPath;
+    QString inputResourcePackTempPath;
+    QString outputResourcePackTempPath;
 
     int inputResourcePackType;
     int outputResourcePackType;
@@ -66,9 +69,14 @@ private:
     QJsonObject javaIdentityMap;
     QJsonObject bedrockIdentityMap;
 
+    // ------------------
+    int totalFilesToBeConverted;
+    // ------------------
+
     void loadData();
     void loadIdentityPatterns();
 
+    void convert();
     void convertFile(QFileInfo fileInfo, QJsonValueRef identityRef);
     void convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef);
 };

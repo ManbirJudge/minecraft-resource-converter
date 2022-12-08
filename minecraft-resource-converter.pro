@@ -10,14 +10,17 @@ CONFIG += c++17
 SOURCES += \
     converter.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    settings_dialog.cpp
 
 HEADERS += \
     converter.h \
-    mainwindow.h
+    mainwindow.h \
+    settings_dialog.h
 
 FORMS += \
-    mainwindow.ui
+    mainwindow.ui \
+    settings_dialog.ui
 
 
 win32:CONFIG(release, debug|release): LIBS += -L'C:/Users/manbi/CPP Libraries/ziplib/bin/' -llibzip
@@ -26,3 +29,7 @@ else:unix: LIBS += -L'C:/Users/manbi/CPP Libraries/ziplib/bin/' -llibzip
 
 INCLUDEPATH += 'C:/Users/manbi/CPP Libraries/ziplib/include'
 DEPENDPATH += 'C:/Users/manbi/CPP Libraries/ziplib/include'
+
+RESOURCES += \
+    assets.qrc \
+    identity_maps.qrc

@@ -113,38 +113,34 @@ void Converter::zipDirectory(QString srcDirPath_, QString zippedFilePath_) {
     char bufferStr[100];
     int error = 0;
 
-    struct zip *zipArchive = zip_open(zippedFilePath.c_str(), ZIP_CREATE, &error);
-    zip_source_t *zipBuffer;
-
+    zip_t* zipArchive = zip_open(zippedFilePath.c_str(), ZIP_CREATE, &error);
     if (zipArchive == NULL) {
         zip_error_to_str(bufferStr, sizeof(bufferStr), error, errno);
-        std::cout << "Can not create the zip file: " << error <<  ":\n" << bufferStr;
+        std::cout << "[ERROR] Can not create the zip file: " << error <<  ":\n" << bufferStr;
     }
+
+    zip_source_t* zipSource;
 
     foreach (QFileInfo fileInfo, srcDir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
         if (fileInfo.isFile()) {
-            std::ifstream fileStream;
-            fileStream.open(fileInfo.canonicalFilePath().toStdString(), std::ios::binary);
-            std::string fileContent((std::istreambuf_iterator<char>(fileStream)), (std::istreambuf_iterator<char>()));
-
-            zipBuffer = zip_source_buffer(zipArchive, fileContent.c_str(), fileContent.length(), 0);
-            if (zipBuffer == NULL) {
-                qDebug() << "Failed to create source buffer for" << fileInfo.fileName() + ".";
+            zipSource = zip_source_file(zipArchive, fileInfo.canonicalFilePath().toStdString().c_str(), 0, 0);
+            if (zipSource == NULL) {
+                qDebug() << "[ERROR] Failed to create source buffer for" << fileInfo.fileName() + ".";
+                continue;
             }
 
             int fileIndex = zip_file_add(
                 zipArchive,
                 srcDir.relativeFilePath(fileInfo.canonicalFilePath()).toStdString().c_str(),
-                zipBuffer,
+                zipSource,
                 ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8
             );
             if (fileIndex < 0) {
-                qDebug() << "Failed to add" << fileInfo.fileName() << "to archive.";
+                qDebug() << "[ERROR] Failed to add" << fileInfo.fileName() << "to archive.";
+                continue;
             }
-
-            fileStream.close();
         } else if (fileInfo.isDir()) {
-            this->addDirectoryToZip(zipArchive, fileInfo, srcDir);
+            this->addDirectoryToZip(zipArchive, zipSource, fileInfo, srcDir);
         }
     }
 
@@ -152,38 +148,32 @@ void Converter::zipDirectory(QString srcDirPath_, QString zippedFilePath_) {
         qDebug() << "[DEBUG] Cannot close the zip file.";
     }
 }
-void Converter::addDirectoryToZip(struct zip* zipArchive, QFileInfo srcDirInfo, QDir rootSrcDir) {
+void Converter::addDirectoryToZip(zip_t* zipArchive, zip_source_t* zipSource, QFileInfo srcDirInfo, QDir rootSrcDir) {
     QDir srcDir = QDir(srcDirInfo.canonicalFilePath());
 
     zip_dir_add(zipArchive, rootSrcDir.relativeFilePath(srcDirInfo.canonicalFilePath()).toStdString().c_str(), ZIP_FL_ENC_UTF_8);
 
-    zip_source_t *zipBuffer;
-
     foreach (QFileInfo fileInfo, srcDir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
         if (fileInfo.isFile()) {
-            QFile file = QFile(fileInfo.canonicalFilePath());
-            file.open(QFile::ReadOnly);
-
-            std::string fileContent = file.readAll().toStdString();
-
-            zipBuffer = zip_source_buffer(zipArchive, fileContent.c_str(), fileContent.length(), 0);
-            if (zipBuffer == NULL) {
+            zipSource = zip_source_file(zipArchive, fileInfo.canonicalFilePath().toStdString().c_str(), 0, 0);
+            if (zipSource == NULL) {
                 qDebug() << "Failed to create source buffer for" << fileInfo.fileName() + ".";
+                continue;
             }
 
             int fileIndex = zip_file_add(
                 zipArchive,
                 rootSrcDir.relativeFilePath(fileInfo.canonicalFilePath()).toStdString().c_str(),
-                zipBuffer,
+                zipSource,
                 ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8
             );
             if (fileIndex < 0) {
                 qDebug() << "Failed to add" << fileInfo.fileName() << "to archive.";
+                continue;
             }
 
-            file.close();
         } else if (fileInfo.isDir()) {
-            this->addDirectoryToZip(zipArchive, fileInfo, rootSrcDir);
+            this->addDirectoryToZip(zipArchive, zipSource, fileInfo, rootSrcDir);
         }
     }
 }
@@ -208,34 +198,35 @@ void Converter::copyDir(QString srcPath, QString dstPath) {
 
 void Converter::loadData() {
     // making temperary directory
-    QDir().rmdir("tmp");
+    QDir tmpDir = QDir("tmp");
+    qDebug() << "[DEBUG] Removed temperary directory with result:" << tmpDir.removeRecursively();
     QDir().mkdir("tmp");
 
-    QDir tmpDir = QDir("tmp");
-
     // loading input resource pack into temperary directory
-    this->inputResourcePackPath = tmpDir.path() + "/Java Resource Pack";
+    this->inputResourcePackTempPath = tmpDir.path() + "/Java Resource Pack";
     if (this->inputResourcePackType == 0) {
         qDebug() << "[DEBUG] Input resource pack type is zip file.";
 
         QStringList _ = this->inputFilePath.split('/').last().split('.');
         _.removeLast();
 
+        qDebug() << "[DEBUG] Unzipping input resource pack to temperary directory.";
         this->resourcePackName = _.join('/');
         this->unzipFile(this->inputFilePath, tmpDir.path() + "/Java Resource Pack");
     } else {
-        qDebug() << "[DEBUG] Input resource pack type is folder.";
+        qDebug() << "[DEBUG] Input resource pack type is folderI would say that.";
 
+        qDebug() << "[DEBUG] Coppying input resource pack to temperary directory.";
         this->resourcePackName = this->inputFilePath.split('/').last();
         this->copyDir(this->inputFilePath, tmpDir.path() + "/Java Resource Pack");
     }
 
     // output resource pack stuff
-    this->outputResourcePackPath = tmpDir.path() + "/Bedrock Resource Pack";
-    QDir().mkdir(this->outputResourcePackPath);
+    this->outputResourcePackTempPath = tmpDir.path() + "/Bedrock Resource Pack";
+    QDir().mkdir(this->outputResourcePackTempPath);
 
     // loading resource pack configuration
-    QFile packConfigFile = QFile(this->inputResourcePackPath + "/pack.mcmeta");
+    QFile packConfigFile = QFile(this->inputResourcePackTempPath + "/pack.mcmeta");
     packConfigFile.open(QFile::ReadOnly);
     QJsonDocument packConfigJsonDoc = QJsonDocument::fromJson(packConfigFile.readAll());
     packConfigFile.close();
@@ -251,8 +242,8 @@ void Converter::loadData() {
     this->loadIdentityPatterns();
 }
 void Converter::loadIdentityPatterns() {
-    QFile javaIdentityMapFile = QFile("identity_pattern_java_" + QString::number(this->resourcePackConfigFormat) + ".json");
-    QFile bedrockIdentityMapFile = QFile("identity_pattern_bedrock_" + QString::number(this->resourcePackConfigFormat) + ".json");
+    QFile javaIdentityMapFile = QFile(":/identity_maps_java/identity_maps/identity_maps_java/identity_map_java_" + QString::number(this->resourcePackConfigFormat) + ".json");
+    QFile bedrockIdentityMapFile = QFile(":/identity_maps_bedrock/identity_maps/identity_maps_bedrock/identity_map_bedrock_" + QString::number(this->resourcePackConfigFormat) + ".json");
 
     javaIdentityMapFile.open(QFile::ReadOnly);
     bedrockIdentityMapFile.open(QFile::ReadOnly);
@@ -273,21 +264,28 @@ void Converter::loadIdentityPatterns() {
 
 void Converter::startConversion() {
     qDebug() << "[DEBUG] Starting conversion.";
-    foreach(const QFileInfo info, QDir(this->inputResourcePackPath).entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot)) {
-        if (info.isFile()) convertFile(info, this->javaIdentityMap[info.fileName()]);
-        else if (info.isDir()) convertDir(info, this->javaIdentityMap[info.fileName()]);
-    }
+
+    this->convert();
 
     if (this->outputResourcePackType == 0) {
-        // qDebug() << "[DEBUG] Zipping the output resource pack into .mcpack zip archive.";
-        // this->zipDirectory(this->outputResourcePackPath, this->outputDirPath + "/" + this->resourcePackName + ".mcpack");
+        qDebug() << "[DEBUG] Zipping the output resource pack into .mcpack zip archive.";
+        this->zipDirectory(this->outputResourcePackTempPath, this->outputDirPath + "/" + this->resourcePackName + " (converted).mcpack");
     } else {
-        // TODO:  copy directory
+        qDebug() << "[DEBUG] Copying the output resource pack to output directory.";
+        this->copyDir(this->outputResourcePackTempPath, this->outputDirPath + "/" + this->resourcePackName + " (converted)");
     }
 
     qDebug() << "[DEBUG] Conversion done.";
 }
 
+void Converter::convert() {
+    QDir inputResourcePactTempDir = QDir(this->inputResourcePackTempPath);
+
+    foreach(const QFileInfo info, inputResourcePactTempDir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot)) {
+        if (info.isFile()) convertFile(info, this->javaIdentityMap[info.fileName()]);
+        else if (info.isDir()) convertDir(info, this->javaIdentityMap[info.fileName()]);
+    }
+}
 void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
     if (identityRef.isNull() || identityRef.isUndefined()) {
         return;
@@ -333,7 +331,7 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
              bedrockManifest.insert("header", bedrockManifestHeader);
              bedrockManifest.insert("modules", bedrockManifestModules);
 
-             QFile bedrockManifestFile = QFile(this->outputResourcePackPath + "/manifest.json");
+             QFile bedrockManifestFile = QFile(this->outputResourcePackTempPath + "/manifest.json");
              bedrockManifestFile.open(QFile::WriteOnly);
 
              bedrockManifestFile.write(QJsonDocument(bedrockManifest).toJson());
@@ -345,8 +343,8 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
         QFile file = QFile(fileInfo.absoluteFilePath());
 
         foreach(QString newPath, newPaths) {
-            QDir().mkpath(this->outputResourcePackPath + "/" + newPath.split('/').first(newPath.split('/').length() - 1).join('/'));
-            file.copy(this->outputResourcePackPath + "/" + newPath);
+            QDir().mkpath(this->outputResourcePackTempPath + "/" + newPath.split('/').first(newPath.split('/').length() - 1).join('/'));
+            file.copy(this->outputResourcePackTempPath + "/" + newPath);
         }
     }
 }
