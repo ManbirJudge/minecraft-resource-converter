@@ -242,8 +242,8 @@ void Converter::loadData() {
     this->loadIdentityPatterns();
 }
 void Converter::loadIdentityPatterns() {
-    QFile javaIdentityMapFile = QFile(":/identity_maps_java/identity_maps/identity_maps_java/identity_map_java_" + QString::number(this->resourcePackConfigFormat) + ".json");
-    QFile bedrockIdentityMapFile = QFile(":/identity_maps_bedrock/identity_maps/identity_maps_bedrock/identity_map_bedrock_" + QString::number(this->resourcePackConfigFormat) + ".json");
+    QFile javaIdentityMapFile = QFile(":/identity_maps_java/assets/identity_maps/identity_maps_java/identity_map_java_" + QString::number(this->resourcePackConfigFormat) + ".json");
+    QFile bedrockIdentityMapFile = QFile(":/identity_maps_bedrock/assets/identity_maps/identity_maps_bedrock/identity_map_bedrock_" + QString::number(this->resourcePackConfigFormat) + ".json");
 
     javaIdentityMapFile.open(QFile::ReadOnly);
     bedrockIdentityMapFile.open(QFile::ReadOnly);
