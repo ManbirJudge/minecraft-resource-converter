@@ -1,5 +1,8 @@
 #include "converter.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 std::string get_uuid() {
     static std::random_device dev;
     static std::mt19937 rng(dev());
@@ -19,18 +22,27 @@ std::string get_uuid() {
 }
 
 Converter::Converter(
-    QString inputFilePath_,
-    QString outputDirPath_,
+    QString inputJavaResourcePackPath_,
+    QString outputBedrockResourcePackDirPath_,
 
-    int inputResourcePackType_,
-    int outputResourcePackType_
-) : inputFilePath(inputFilePath_),
-    outputDirPath(outputDirPath_),
-    inputResourcePackType(inputResourcePackType_),
-    outputResourcePackType(outputResourcePackType_)
+    int inputJavaResourcePackType_,
+    int outputBedrockResourcePackType_,
+    int bedrockResourcePackMCMetaUUIDType_,
+
+    QString bedrockResourcePackMCMetaUUID_
+) : inputJavaResourcePackPath(inputJavaResourcePackPath_),
+    outputBedrockResourcePackDirPath(outputBedrockResourcePackDirPath_),
+    inputJavaResourcePackType(inputJavaResourcePackType_),
+    outputBedrockResourcePackType(outputBedrockResourcePackType_),
+    bedrockResourcePackMCMetaUUIDType(bedrockResourcePackMCMetaUUIDType_),
+    bedrockResourcePackMCMetaUUID(bedrockResourcePackMCMetaUUID_)
 {
-    if (this->inputFilePath.isEmpty() or this->inputFilePath.isNull()) throw std::invalid_argument("Input file path was not given.");
-    if (this->outputDirPath.isEmpty() or this->outputDirPath.isNull()) throw std::invalid_argument("Output directory was not given.");
+    this->conversionFunctions.insert("convert_item_clock", &Converter::convert_item_clock);
+    this->conversionFunctions.insert("convert_item_compass", &Converter::convert_item_compass);
+    this->conversionFunctions.insert("convert_item_recovery_compass", &Converter::convert_item_recovery_compass);
+
+    if (this->inputJavaResourcePackPath.isEmpty() or this->inputJavaResourcePackPath.isNull()) throw std::invalid_argument("Input file path was not given.");
+    if (this->outputBedrockResourcePackDirPath.isEmpty() or this->outputBedrockResourcePackDirPath.isNull()) throw std::invalid_argument("Output directory was not given.");
 
     this->loadData();
 }
@@ -104,7 +116,7 @@ void Converter::unzipFile(QString srcFilePath_, QString destinationDirectoryPath
         qDebug() << "[ERROR] Cannot close the zip file.";
     }
 }
-void Converter::zipDirectory(QString srcDirPath_, QString zippedFilePath_) {
+void Converter::zipDir(QString srcDirPath_, QString zippedFilePath_) {
     std::string srcDirPath = srcDirPath_.toStdString();
     std::string zippedFilePath = zippedFilePath_.toStdString();
 
@@ -140,7 +152,7 @@ void Converter::zipDirectory(QString srcDirPath_, QString zippedFilePath_) {
                 continue;
             }
         } else if (fileInfo.isDir()) {
-            this->addDirectoryToZip(zipArchive, zipSource, fileInfo, srcDir);
+            this->addDirToZip(zipArchive, zipSource, fileInfo, srcDir);
         }
     }
 
@@ -148,7 +160,7 @@ void Converter::zipDirectory(QString srcDirPath_, QString zippedFilePath_) {
         qDebug() << "[DEBUG] Cannot close the zip file.";
     }
 }
-void Converter::addDirectoryToZip(zip_t* zipArchive, zip_source_t* zipSource, QFileInfo srcDirInfo, QDir rootSrcDir) {
+void Converter::addDirToZip(zip_t* zipArchive, zip_source_t* zipSource, QFileInfo srcDirInfo, QDir rootSrcDir) {
     QDir srcDir = QDir(srcDirInfo.canonicalFilePath());
 
     zip_dir_add(zipArchive, rootSrcDir.relativeFilePath(srcDirInfo.canonicalFilePath()).toStdString().c_str(), ZIP_FL_ENC_UTF_8);
@@ -172,8 +184,8 @@ void Converter::addDirectoryToZip(zip_t* zipArchive, zip_source_t* zipSource, QF
                 continue;
             }
 
-        } else if (fileInfo.isDir()) {
-            this->addDirectoryToZip(zipArchive, zipSource, fileInfo, rootSrcDir);
+        } else if (fileInfo.isDir())       {
+            this->addDirToZip(zipArchive, zipSource, fileInfo, rootSrcDir);
         }
     }
 }
@@ -203,47 +215,47 @@ void Converter::loadData() {
     QDir().mkdir("tmp");
 
     // loading input resource pack into temperary directory
-    this->inputResourcePackTempPath = tmpDir.path() + "/Java Resource Pack";
-    if (this->inputResourcePackType == 0) {
+    this->javaResourcePackTempPath = tmpDir.path() + "/Java Resource Pack";
+    if (this->inputJavaResourcePackType == 0) {
         qDebug() << "[DEBUG] Input resource pack type is zip file.";
 
-        QStringList _ = this->inputFilePath.split('/').last().split('.');
+        QStringList _ = this->inputJavaResourcePackPath.split('/').last().split('.');
         _.removeLast();
 
         qDebug() << "[DEBUG] Unzipping input resource pack to temperary directory.";
-        this->resourcePackName = _.join('/');
-        this->unzipFile(this->inputFilePath, tmpDir.path() + "/Java Resource Pack");
+        this->javaResourcePackName = _.join('/');
+        this->unzipFile(this->inputJavaResourcePackPath, tmpDir.path() + "/Java Resource Pack");
     } else {
         qDebug() << "[DEBUG] Input resource pack type is folderI would say that.";
 
         qDebug() << "[DEBUG] Coppying input resource pack to temperary directory.";
-        this->resourcePackName = this->inputFilePath.split('/').last();
-        this->copyDir(this->inputFilePath, tmpDir.path() + "/Java Resource Pack");
+        this->javaResourcePackName = this->inputJavaResourcePackPath.split('/').last();
+        this->copyDir(this->inputJavaResourcePackPath, tmpDir.path() + "/Java Resource Pack");
     }
 
     // output resource pack stuff
-    this->outputResourcePackTempPath = tmpDir.path() + "/Bedrock Resource Pack";
-    QDir().mkdir(this->outputResourcePackTempPath);
+    this->bedrockResourcePackTempPath = tmpDir.path() + "/Bedrock Resource Pack";
+    QDir().mkdir(this->bedrockResourcePackTempPath);
 
     // loading resource pack configuration
-    QFile packConfigFile = QFile(this->inputResourcePackTempPath + "/pack.mcmeta");
+    QFile packConfigFile = QFile(this->javaResourcePackTempPath + "/pack.mcmeta");
     packConfigFile.open(QFile::ReadOnly);
     QJsonDocument packConfigJsonDoc = QJsonDocument::fromJson(packConfigFile.readAll());
     packConfigFile.close();
 
     if (packConfigJsonDoc.isObject()) {
-        this->resourcePackConfig = packConfigJsonDoc.object();
+        this->javaResourcePackConfig = packConfigJsonDoc.object();
     }
 
     // TODO: this->resourcePackConfigFormat = this->resourcePackConfig["pack"].toObject()["pack_format"].toInt(0);
-    this->resourcePackDesc = this->resourcePackConfig["pack"].toObject()["description"].toString();
+    this->javaResourcePackDesc = this->javaResourcePackConfig["pack"].toObject()["description"].toString();
 
     // loading conversion pattern
     this->loadIdentityPatterns();
 }
 void Converter::loadIdentityPatterns() {
-    QFile javaIdentityMapFile = QFile(":/identity_maps_java/assets/identity_maps/identity_maps_java/identity_map_java_" + QString::number(this->resourcePackConfigFormat) + ".json");
-    QFile bedrockIdentityMapFile = QFile(":/identity_maps_bedrock/assets/identity_maps/identity_maps_bedrock/identity_map_bedrock_" + QString::number(this->resourcePackConfigFormat) + ".json");
+    QFile javaIdentityMapFile = QFile(":/identity_maps_java/assets/identity_maps/identity_maps_java/identity_map_java_" + QString::number(this->javaResourcePackConfigFormat) + ".json");
+    QFile bedrockIdentityMapFile = QFile(":/identity_maps_bedrock/assets/identity_maps/identity_maps_bedrock/identity_map_bedrock_" + QString::number(this->javaResourcePackConfigFormat) + ".json");
 
     javaIdentityMapFile.open(QFile::ReadOnly);
     bedrockIdentityMapFile.open(QFile::ReadOnly);
@@ -267,21 +279,21 @@ void Converter::startConversion() {
 
     this->convert();
 
-    if (this->outputResourcePackType == 0) {
+    if (this->outputBedrockResourcePackType == 0) {
         qDebug() << "[DEBUG] Zipping the output resource pack into .mcpack zip archive.";
-        this->zipDirectory(this->outputResourcePackTempPath, this->outputDirPath + "/" + this->resourcePackName + " (converted).mcpack");
+        this->zipDir(this->bedrockResourcePackTempPath, this->outputBedrockResourcePackDirPath + "/" + this->javaResourcePackName + " (converted).mcpack");
     } else {
         qDebug() << "[DEBUG] Copying the output resource pack to output directory.";
-        this->copyDir(this->outputResourcePackTempPath, this->outputDirPath + "/" + this->resourcePackName + " (converted)");
+        this->copyDir(this->bedrockResourcePackTempPath, this->outputBedrockResourcePackDirPath + "/" + this->javaResourcePackName + " (converted)");
     }
 
     qDebug() << "[DEBUG] Conversion done.";
 }
 
 void Converter::convert() {
-    QDir inputResourcePactTempDir = QDir(this->inputResourcePackTempPath);
+    QDir javaResourcePackTempDir = QDir(this->javaResourcePackTempPath);
 
-    foreach(const QFileInfo info, inputResourcePactTempDir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot)) {
+    foreach(const QFileInfo info, javaResourcePackTempDir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot)) {
         if (info.isFile()) convertFile(info, this->javaIdentityMap[info.fileName()]);
         else if (info.isDir()) convertDir(info, this->javaIdentityMap[info.fileName()]);
     }
@@ -291,73 +303,176 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
         return;
     }
     QString identity = identityRef.toString();
+
+    if (this->bedrockIdentityMap[identity].isNull() || this->bedrockIdentityMap[identity].isUndefined()) {
+        return;
+    }
     QString bedrockEquivelent = this->bedrockIdentityMap[identity].toString();
 
     if (bedrockEquivelent.startsWith("$")) {
-         bedrockEquivelent = bedrockEquivelent.remove("$");
+        bedrockEquivelent = bedrockEquivelent.remove("$");
 
-         if (bedrockEquivelent == "convert_meta") {
+        if (bedrockEquivelent == "convert_meta") {
+            QJsonObject bedrockManifest = QJsonObject();
+            QJsonObject bedrockManifestHeader = QJsonObject();
+            QJsonArray bedrockManifestModules = QJsonArray();
+            QJsonObject bedrockManifestModule = QJsonObject();
 
-             QJsonObject bedrockManifest = QJsonObject();
-             QJsonObject bedrockManifestHeader = QJsonObject();
-             QJsonArray bedrockManifestModules = QJsonArray();
-             QJsonObject bedrockManifestModule = QJsonObject();
+            QJsonArray bedrockManifestResourceVersion = QJsonArray();
+            QJsonArray bedrockManifestMinEngineVersion = QJsonArray();
 
-             QJsonArray bedrockManifestResourceVersion = QJsonArray();
-             QJsonArray bedrockManifestMinEngineVersion = QJsonArray();
+            bedrockManifestResourceVersion.append(1);
+            bedrockManifestResourceVersion.append(0);
+            bedrockManifestResourceVersion.append(0);
 
-             bedrockManifestResourceVersion.append(1);
-             bedrockManifestResourceVersion.append(0);
-             bedrockManifestResourceVersion.append(0);
+            bedrockManifestMinEngineVersion.append(1);
+            bedrockManifestMinEngineVersion.append(19);
+            bedrockManifestMinEngineVersion.append(40);
 
-             bedrockManifestMinEngineVersion.append(1);
-             bedrockManifestMinEngineVersion.append(19);
-             bedrockManifestMinEngineVersion.append(40);
+            bedrockManifestModule.insert("description", this->javaResourcePackDesc);
+            bedrockManifestModule.insert("type", "resources");
+            bedrockManifestModule.insert("uuid", QString(get_uuid().c_str()));
+            bedrockManifestModule.insert("version", bedrockManifestResourceVersion);
 
-             bedrockManifestModule.insert("description", this->resourcePackDesc);
-             bedrockManifestModule.insert("type", "resources");
-             bedrockManifestModule.insert("uuid", QString(get_uuid().c_str()));
-             bedrockManifestModule.insert("version", bedrockManifestResourceVersion);
+            bedrockManifestModules.append(bedrockManifestModule);
 
-             bedrockManifestModules.append(bedrockManifestModule);
+            bedrockManifestHeader.insert("description", this->javaResourcePackDesc);
+            bedrockManifestHeader.insert("name", this->javaResourcePackName);
+            if (bedrockResourcePackMCMetaUUIDType == 0) bedrockManifestHeader.insert("uuid", QString(get_uuid().c_str()));
+            else bedrockManifestHeader.insert("uuid", QString(get_uuid().c_str()));
+            bedrockManifestHeader.insert("version", bedrockManifestResourceVersion);
+            bedrockManifestHeader.insert("min_engine_version", bedrockManifestMinEngineVersion);
 
-             bedrockManifestHeader.insert("description", this->resourcePackDesc);
-             bedrockManifestHeader.insert("name", this->resourcePackName);
-             bedrockManifestHeader.insert("uuid", QString(get_uuid().c_str()));
-             bedrockManifestHeader.insert("version", bedrockManifestResourceVersion);
-             bedrockManifestHeader.insert("min_engine_version", bedrockManifestMinEngineVersion);
+            bedrockManifest.insert("format_version", 2);
+            bedrockManifest.insert("header", bedrockManifestHeader);
+            bedrockManifest.insert("modules", bedrockManifestModules);
 
-             bedrockManifest.insert("format_version", 2);
-             bedrockManifest.insert("header", bedrockManifestHeader);
-             bedrockManifest.insert("modules", bedrockManifestModules);
+            QFile bedrockManifestFile = QFile(this->bedrockResourcePackTempPath + "/manifest.json");
+            bedrockManifestFile.open(QFile::WriteOnly);
 
-             QFile bedrockManifestFile = QFile(this->outputResourcePackTempPath + "/manifest.json");
-             bedrockManifestFile.open(QFile::WriteOnly);
+            bedrockManifestFile.write(QJsonDocument(bedrockManifest).toJson());
 
-             bedrockManifestFile.write(QJsonDocument(bedrockManifest).toJson());
-
-             bedrockManifestFile.close();
-         }
+            bedrockManifestFile.close();
+        }
+        else {
+            if (Converter::conversionFunctions.contains(bedrockEquivelent)) {
+                (this->*conversionFunctions.value(bedrockEquivelent))(fileInfo.canonicalPath(), bedrockResourcePackTempPath);
+            } else {
+                std::cout << "[ERROR] Function not found: \"" << bedrockEquivelent.toStdString().c_str() << "\"" << std::endl;
+                return;
+            }
+        }
     } else {
         QStringList newPaths = bedrockEquivelent.split("%and%");
-        QFile file = QFile(fileInfo.absoluteFilePath());
+
+        cv::Mat image = cv::imread(fileInfo.canonicalFilePath().toStdString(), cv::IMREAD_UNCHANGED);
+
+        if (image.empty()) {
+            qDebug() << "Can not open image:" << fileInfo.canonicalFilePath();
+            return;
+        }
 
         foreach(QString newPath, newPaths) {
-            QDir().mkpath(this->outputResourcePackTempPath + "/" + newPath.split('/').first(newPath.split('/').length() - 1).join('/'));
-            file.copy(this->outputResourcePackTempPath + "/" + newPath);
+            QDir().mkpath(this->bedrockResourcePackTempPath + "/" + newPath.split('/').first(newPath.split('/').length() - 1).join('/'));
+            std::string imageFileFormat = newPath.split('.').last().toUpper().toStdString();
+
+            if (imageFileFormat == "TGA") {
+                int CHANNELS = image.channels();
+
+                stbi_write_tga((this->bedrockResourcePackTempPath + "/" + newPath).toStdString().c_str(), image.size().width, image.size().height, CHANNELS, image.data);
+            } else {
+                cv::imwrite((this->bedrockResourcePackTempPath + "/" + newPath).toStdString(), image);
+            }
         }
     }
 }
 void Converter::convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef) {
-    // qDebug() << "Converting directory:" << dirInfo.absoluteFilePath();
-
-    if (identityMapRef.isNull() || identityMapRef.isUndefined()) {
-        return;
-    }
+    if (identityMapRef.isNull() || identityMapRef.isUndefined()) return;
     QJsonObject identityMap = identityMapRef.toObject();
 
     foreach(const QFileInfo info, QDir(dirInfo.absoluteFilePath()).entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot)) {
         if (info.isFile()) convertFile(info, identityMap[info.fileName()]);
         else if (info.isDir()) convertDir(info, identityMap[info.fileName()]);
     }
+}
+
+void Converter::convert_item_clock(QString inputDir, QString outputDir) {
+    QString outputPath = outputDir + "/textures/items/clock_item.png";
+    QString outputPathAtlas = outputDir + "/textures/items/watch_atlas.png";
+
+    cv::Mat clock = cv::imread((inputDir + "/clock_00.png").toStdString(), cv::IMREAD_UNCHANGED);
+    int clockWidth = clock.size().width;
+    int clockHeight = clock.size().height;
+
+    cv::imwrite(outputPath.toStdString(), clock);
+
+    cv::Mat atlas = cv::Mat::zeros(cv::Size(clockWidth, clockHeight * 64), CV_8UC4);
+
+    for (int i = 0; i <= 63; i++) {
+        std::string clockFileName;
+
+        if (i < 10) clockFileName = (inputDir + "/clock_0" + QString::number(i) + ".png").toStdString();
+        else clockFileName = (inputDir + "/clock_" + QString::number(i) + ".png").toStdString();
+
+        clock = cv::imread(clockFileName, cv::IMREAD_UNCHANGED);
+
+        clock.copyTo(atlas(cv::Rect(0, clockHeight * i, clockWidth, clockHeight)));
+    }
+
+
+    cv::imwrite(outputPathAtlas.toStdString(), atlas);
+}
+
+void Converter::convert_item_compass(QString inputDir, QString outputDir) {
+    QString outputPath = outputDir + "/textures/items/compass_item.png";
+    QString outputPathAtlas = outputDir + "/textures/items/compass_atlas.png";
+
+    cv::Mat compass = cv::imread((inputDir + "/compass_00.png").toStdString(), cv::IMREAD_UNCHANGED);
+    int compassWidth = compass.size().width;
+    int compassHeight = compass.size().height;
+
+    cv::imwrite(outputPath.toStdString(), compass);
+
+    cv::Mat atlas = cv::Mat::zeros(cv::Size(compassWidth, compassHeight * 32), CV_8UC4);
+
+    for (int i = 0; i <= 31; i++) {
+        std::string compassFileName;
+
+        if (i < 10) compassFileName = (inputDir + "/compass_0" + QString::number(i) + ".png").toStdString();
+        else compassFileName = (inputDir + "/compass_" + QString::number(i) + ".png").toStdString();
+
+        compass = cv::imread(compassFileName, cv::IMREAD_UNCHANGED);
+
+        compass.copyTo(atlas(cv::Rect(0, compassHeight * i, compassWidth, compassHeight)));
+    }
+
+
+    cv::imwrite(outputPathAtlas.toStdString(), atlas);
+}
+
+void Converter::convert_item_recovery_compass(QString inputDir, QString outputDir) {
+    QString outputPath = outputDir + "/textures/items/recovery_compass_item.png";
+    QString outputPathAtlas = outputDir + "/textures/items/recovery_compass_atlas.png";
+
+    cv::Mat recoveryCompass = cv::imread((inputDir + "/recovery_compass_00.png").toStdString(), cv::IMREAD_UNCHANGED);
+    int recoveryCompassWidth = recoveryCompass.size().width;
+    int recoveryCompassHeight = recoveryCompass.size().height;
+
+    cv::imwrite(outputPath.toStdString(), recoveryCompass);
+
+    cv::Mat atlas = cv::Mat::zeros(cv::Size(recoveryCompassWidth, recoveryCompassHeight * 32), CV_8UC4);
+
+    for (int i = 0; i <= 31; i++) {
+        std::string recoveryCompassFileName;
+
+        if (i < 10) recoveryCompassFileName = (inputDir + "/recovery_compass_0" + QString::number(i) + ".png").toStdString();
+        else recoveryCompassFileName = (inputDir + "/recovery_compass_" + QString::number(i) + ".png").toStdString();
+
+        recoveryCompass = cv::imread(recoveryCompassFileName, cv::IMREAD_UNCHANGED);
+
+        recoveryCompass.copyTo(atlas(cv::Rect(0, recoveryCompassHeight * i, recoveryCompassWidth, recoveryCompassHeight)));
+    }
+
+
+    cv::imwrite(outputPathAtlas.toStdString(), atlas);
 }

@@ -26,6 +26,7 @@ private slots:
 
     void javaResourcePackTypeChanged(int index);
     void bedrockResourcePackTypeChanged(int index);
+    void bedrockResourcePackMCMetaUUIDTypeChanged(int index);
 
     void convertBtnClicked();
 
@@ -43,9 +44,10 @@ private:
 
     const QStringList JAVA_RESOURCE_PACK_TYPES = { "Zip File (.zip)", "Folder" };
     const QStringList BEDROCK_RESOURCE_PACK_TYPES = { "McPack (.mcpack)", "Folder" };
+    const QStringList BEDROCK_RESOURCE_PACK_MCMETA_UUID_OPTIONS = { "Random", "Custom" };
 
-    QString javaResourcePackPath = "C:/Users/manbi/Downloads/Faithful 64x.zip";
-    QString bedrockResourcePackPath = "D:/Manbir";
+    QString javaResourcePackPath = "C:/Users/manbi/Downloads/Faithful 64x.zip";  // TEMP
+    QString bedrockResourcePackOutputPath = "D:/Manbir";  // TEMP
 
     QString javaResourcePackType = this->BEDROCK_RESOURCE_PACK_TYPES[0];
     QString bedrockResourcePackType = this->JAVA_RESOURCE_PACK_TYPES[0];

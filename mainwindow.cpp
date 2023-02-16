@@ -11,12 +11,15 @@ MainWindow::MainWindow(QWidget *parent):
 
     ui->javaResourcePackTypeCombo->addItems(this->JAVA_RESOURCE_PACK_TYPES);
     ui->bedrockResourcePackTypeCombo->addItems(this->BEDROCK_RESOURCE_PACK_TYPES);
+    ui->bedrockResourcePackMCMetaUUIDComboBox->addItems(this->BEDROCK_RESOURCE_PACK_MCMETA_UUID_OPTIONS);
 
     ui->javaResourcePackTypeCombo->setCurrentIndex(0);
     ui->bedrockResourcePackTypeCombo->setCurrentIndex(0);
+    ui->bedrockResourcePackMCMetaUUIDComboBox->setCurrentIndex(1);  // TEMP
+    this->bedrockResourcePackMCMetaUUIDTypeChanged(1);  // TEMP
 
     ui->javaResourcePackLineEdit->setText(this->javaResourcePackPath);
-    ui->bedrockResourcePackLineEdit->setText(this->bedrockResourcePackPath);
+    ui->bedrockResourcePackLineEdit->setText(this->bedrockResourcePackOutputPath);
 
     ui->conversionStatusLabel->hide();
     ui->conversionStatusProgressBar->hide();
@@ -32,6 +35,7 @@ MainWindow::MainWindow(QWidget *parent):
 
     connect(ui->javaResourcePackTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(javaResourcePackTypeChanged(int)));
     connect(ui->bedrockResourcePackTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(bedrockResourcePackTypeChanged(int)));
+    connect(ui->bedrockResourcePackMCMetaUUIDComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(bedrockResourcePackMCMetaUUIDTypeChanged(int)));
 
     connect(ui->startConversionBtn, SIGNAL(clicked()), this, SLOT(convertBtnClicked()));
 
@@ -102,8 +106,8 @@ void MainWindow::bedrockResourcePackBrowseBtnClicked() {
     );
 
     if (!newPath.isEmpty() && !newPath.isNull()) {
-        bedrockResourcePackPath = newPath;
-        ui->bedrockResourcePackLineEdit->setText(bedrockResourcePackPath);
+        bedrockResourcePackOutputPath = newPath;
+        ui->bedrockResourcePackLineEdit->setText(bedrockResourcePackOutputPath);
     }
 }
 
@@ -112,6 +116,10 @@ void MainWindow::javaResourcePackTypeChanged(int index) {
 }
 void MainWindow::bedrockResourcePackTypeChanged(int index) {
     this->bedrockResourcePackType = this->BEDROCK_RESOURCE_PACK_TYPES[index];
+}
+void MainWindow::bedrockResourcePackMCMetaUUIDTypeChanged(int index) {
+    if (index == 0) ui->bedrockResourcePackMCMetaUUIDLineEdit->setEnabled(false);
+    else ui->bedrockResourcePackMCMetaUUIDLineEdit->setEnabled(true);
 }
 
 void MainWindow::convertBtnClicked() {
@@ -125,13 +133,27 @@ void MainWindow::convertBtnClicked() {
         warningDialog->setIcon(QMessageBox::Icon::Warning);
 
         if (warningDialog->exec() == QMessageBox::DialogCode::Accepted) {
-            Converter *converter = new Converter(this->javaResourcePackPath, this->bedrockResourcePackPath, ui->javaResourcePackTypeCombo->currentIndex(), ui->bedrockResourcePackTypeCombo->currentIndex());
+            Converter *converter = new Converter(
+                this->javaResourcePackPath,
+                this->bedrockResourcePackOutputPath,
+                ui->javaResourcePackTypeCombo->currentIndex(),
+                ui->bedrockResourcePackTypeCombo->currentIndex(),
+                ui->bedrockResourcePackMCMetaUUIDComboBox->currentIndex(),
+                ui->bedrockResourcePackMCMetaUUIDLineEdit->text()
+            );
             converter->startConversion();
             delete converter;
         }
 
     } else {
-        Converter *converter = new Converter(this->javaResourcePackPath, this->bedrockResourcePackPath, ui->javaResourcePackTypeCombo->currentIndex(), ui->bedrockResourcePackTypeCombo->currentIndex());
+        Converter *converter = new Converter(
+            this->javaResourcePackPath,
+            this->bedrockResourcePackOutputPath,
+            ui->javaResourcePackTypeCombo->currentIndex(),
+            ui->bedrockResourcePackTypeCombo->currentIndex(),
+            ui->bedrockResourcePackMCMetaUUIDComboBox->currentIndex(),
+            ui->bedrockResourcePackMCMetaUUIDLineEdit->text()
+        );
         converter->startConversion();
         delete converter;
     }
@@ -154,7 +176,7 @@ void MainWindow::helpBtnClicked() {
     qDebug() << "Help button clicked.";
 }
 void MainWindow::settingsDialogClosed(int result) {
-    qDebug() << "[DEBUG] Settings dialog closed.";
+    qDebug() << "[DEBUG] Settings dialog closed with result:" << result;
     this->loadSettings();
 }
 
