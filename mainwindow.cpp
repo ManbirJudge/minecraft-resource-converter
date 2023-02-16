@@ -15,8 +15,9 @@ MainWindow::MainWindow(QWidget *parent):
 
     ui->javaResourcePackTypeCombo->setCurrentIndex(0);
     ui->bedrockResourcePackTypeCombo->setCurrentIndex(0);
-    ui->bedrockResourcePackMCMetaUUIDComboBox->setCurrentIndex(1);  // TEMP
-    this->bedrockResourcePackMCMetaUUIDTypeChanged(1);  // TEMP
+    ui->bedrockResourcePackMCMetaUUIDComboBox->setCurrentIndex(0);
+    // ui->bedrockResourcePackMCMetaUUIDComboBox->setCurrentIndex(1);
+    // this->bedrockResourcePackMCMetaUUIDTypeChanged(1);
 
     ui->javaResourcePackLineEdit->setText(this->javaResourcePackPath);
     ui->bedrockResourcePackLineEdit->setText(this->bedrockResourcePackOutputPath);
