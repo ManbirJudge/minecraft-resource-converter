@@ -39,15 +39,10 @@ public:
 
         int inputJavaResourcePackType,
         int outputBedrockResourcePackType,
+
         int bedrockResourcePackMCMetaUUIDType,
         QString bedrockResourcePackMCMetaUUID
     );
-
-    void unzipFile(QString srcFilePath, QString unzippedDirectoryPath);
-    void zipDir(QString srcDirPath, QString zippedFilePath);
-    void addDirToZip(zip_t* zipArchive, zip_source_t* zipSource, QFileInfo dirInfo, QDir rootSrcDir);
-
-    void copyDir(QString directory, QString toDirectory);
 
     void startConversion();
 
@@ -55,6 +50,14 @@ signals:
     void conversionProgress(int currentFile, int totalFiles, QString fileName);
 
 private:
+    // utility functions
+    void unzipFile(QString srcFilePath, QString unzippedDirectoryPath);
+    void zipDir(QString srcDirPath, QString zippedFilePath);
+    void addDirToZip(zip_t* zipArchive, zip_source_t* zipSource, QFileInfo dirInfo, QDir rootSrcDir);
+
+    void copyDir(QString directory, QString toDirectory);
+
+    // variables
     QString inputJavaResourcePackPath;
     QString outputBedrockResourcePackDirPath;
 
@@ -77,9 +80,8 @@ private:
     QJsonObject javaIdentityMap;
     QJsonObject bedrockIdentityMap;
 
-    // ------------------
+    // sPeCiAl VaRiAbLe
     int totalFilesToBeConverted;
-    // ------------------
 
     // conversion functions
     void loadData();

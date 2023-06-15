@@ -46,10 +46,10 @@ private:
     const QStringList BEDROCK_RESOURCE_PACK_TYPES = { "McPack (.mcpack)", "Folder" };
     const QStringList BEDROCK_RESOURCE_PACK_MCMETA_UUID_OPTIONS = { "Random", "Custom" };
 
-    // QString javaResourcePackPath = "C:/Users/manbi/Downloads/Faithful 64x.zip";
-    // QString bedrockResourcePackOutputPath = "D:/Manbir";
-    QString javaResourcePackPath = "";
-    QString bedrockResourcePackOutputPath = "";
+    QString javaResourcePackPath = "C:/Users/manbi/Downloads/Faithful 64x.zip";
+    QString bedrockResourcePackOutputPath = "D:/Manbir";
+    // QString javaResourcePackPath = "";
+    // QString bedrockResourcePackOutputPath = "";
 
     QString javaResourcePackType = this->BEDROCK_RESOURCE_PACK_TYPES[0];
     QString bedrockResourcePackType = this->JAVA_RESOURCE_PACK_TYPES[0];

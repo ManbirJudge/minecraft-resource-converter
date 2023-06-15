@@ -3,7 +3,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
-std::string get_uuid() {
+std::string gen_uuid() {
     static std::random_device dev;
     static std::mt19937 rng(dev());
 
@@ -18,6 +18,7 @@ std::string get_uuid() {
         res += v[dist(rng)];
         res += v[dist(rng)];
     }
+
     return res;
 }
 
@@ -331,15 +332,15 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
 
             bedrockManifestModule.insert("description", this->javaResourcePackDesc);
             bedrockManifestModule.insert("type", "resources");
-            bedrockManifestModule.insert("uuid", QString(get_uuid().c_str()));
+            bedrockManifestModule.insert("uuid", QString(gen_uuid().c_str()));
             bedrockManifestModule.insert("version", bedrockManifestResourceVersion);
 
             bedrockManifestModules.append(bedrockManifestModule);
 
             bedrockManifestHeader.insert("description", this->javaResourcePackDesc);
             bedrockManifestHeader.insert("name", this->javaResourcePackName);
-            if (bedrockResourcePackMCMetaUUIDType == 0) bedrockManifestHeader.insert("uuid", QString(get_uuid().c_str()));
-            else bedrockManifestHeader.insert("uuid", QString(get_uuid().c_str()));
+            if (bedrockResourcePackMCMetaUUIDType == 0) bedrockManifestHeader.insert("uuid", QString(gen_uuid().c_str()));
+            else bedrockManifestHeader.insert("uuid", QString(gen_uuid().c_str()));
             bedrockManifestHeader.insert("version", bedrockManifestResourceVersion);
             bedrockManifestHeader.insert("min_engine_version", bedrockManifestMinEngineVersion);
 
@@ -422,7 +423,6 @@ void Converter::convert_item_clock(QString inputDir, QString outputDir) {
 
     cv::imwrite(outputPathAtlas.toStdString(), atlas);
 }
-
 void Converter::convert_item_compass(QString inputDir, QString outputDir) {
     QString outputPath = outputDir + "/textures/items/compass_item.png";
     QString outputPathAtlas = outputDir + "/textures/items/compass_atlas.png";
@@ -449,7 +449,6 @@ void Converter::convert_item_compass(QString inputDir, QString outputDir) {
 
     cv::imwrite(outputPathAtlas.toStdString(), atlas);
 }
-
 void Converter::convert_item_recovery_compass(QString inputDir, QString outputDir) {
     QString outputPath = outputDir + "/textures/items/recovery_compass_item.png";
     QString outputPathAtlas = outputDir + "/textures/items/recovery_compass_atlas.png";

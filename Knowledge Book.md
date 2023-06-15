@@ -1,6 +1,5 @@
 # Knowledge Book
 ## Resource pack format
-### Description
 It is an integer value in pack config of Minecraft Java resource pack which relates to the mincraft (java()) version  for which the resource pack is made.
 ### Values
 - **1 -** 1.6.1–1.8.9
