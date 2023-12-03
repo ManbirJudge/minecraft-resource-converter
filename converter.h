@@ -1,6 +1,7 @@
 #ifndef CONVERTER_H
 #define CONVERTER_H
 
+#include <QCoreApplication>
 #include <QString>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -34,14 +35,14 @@ class Converter
 {
 public:
     Converter(
-        QString inputJavaResourcePackPath,
-        QString outputBedrockResourcePackDirPath,
+        QString inputJavaResPackPath,
+        QString outputBedResPackDirPath,
 
-        int inputJavaResourcePackType,
-        int outputBedrockResourcePackType,
+        int inputJavaResPackType,
+        int outputBedResPackType,
 
-        int bedrockResourcePackMCMetaUUIDType,
-        QString bedrockResourcePackMCMetaUUID
+        int bedResPackMCMetaUUIDType,
+        QString bedResPackMCMetaUUID
     );
 
     void startConversion();
@@ -58,45 +59,47 @@ private:
     void copyDir(QString directory, QString toDirectory);
 
     // variables
-    QString inputJavaResourcePackPath;
-    QString outputBedrockResourcePackDirPath;
+    QString inputJavaResPackPath;
+    QString outputBedResPackDirPath;
 
-    QString inputJavaResourcePackFileName;
+    int inputJavaResPackType;
+    int outputBedResPackType;
+    int bedResPackMCMetaUUIDType;
+    QString bedResPackMCMetaUUID;
 
-    QString javaResourcePackName;
-    QString javaResourcePackDesc;
-    QJsonObject javaResourcePackConfig;
-    int javaResourcePackConfigFormat = 9;
+    QString inputJavaResPackFileName;
 
-    QString javaResourcePackTempPath;
-    QString bedrockResourcePackTempPath;
+    QString javaResPackName;
+    QString javaResPackDesc;
+    QJsonObject javaResPackConfig;
+    int javaResPackConfigFormat = 9;
 
-    int inputJavaResourcePackType;
-    int outputBedrockResourcePackType;
-    int bedrockResourcePackMCMetaUUIDType;
+    QString javaResPackTempPath;
+    QString bedResPackTempPath;
 
-    QString bedrockResourcePackMCMetaUUID;
-
-    QJsonObject javaIdentityMap;
-    QJsonObject bedrockIdentityMap;
+    QJsonObject javaIdMap;
+    QJsonObject bedIdMap;
 
     // sPeCiAl VaRiAbLe
     int totalFilesToBeConverted;
 
     // conversion functions
     void loadData();
-    void loadIdentityPatterns();
+    void loadIdMaps();
 
     void convert();
     void convertFile(QFileInfo fileInfo, QJsonValueRef identityRef);
     void convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef);
 
-
+    // on demand speical conversion functions (ODSCFs)
     void convert_item_clock(QString inputDir, QString outputDir);
     void convert_item_compass(QString inputDir, QString outputDir);
     void convert_item_recovery_compass(QString inputDir, QString outputDir);
+    void convert_item_leather_boots(QString inputDir, QString outputDir);
+    void convert_item_leather_helmet(QString inputDir, QString outputDir);
+    void convert_item_leather_leggings(QString inputDir, QString outputDir);
 
-    QHash<QString, void (Converter::*)(QString, QString)> conversionFunctions;
+    QHash<QString, void(Converter::*)(const QString, const QString)> conversionFunctions;
 };
 
 #endif

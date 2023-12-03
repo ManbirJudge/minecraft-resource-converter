@@ -3,6 +3,7 @@ import json
 import os
 
 directory = input('Directory path: ')
+contains_ = input('Contains: ')
 prefix = input('Prefix: ')
 
 file_dict = dict()
@@ -14,6 +15,7 @@ for file in os.listdir(directory):
     file_base_name = os.path.basename(file)
     file_base_name_excluding_ext = '.'.join(file_base_name.split('.')[:-1])
 
-    file_dict[file_base_name] = f'{prefix}{file_base_name_excluding_ext}'
+    if contains_ in file_base_name_excluding_ext:
+        file_dict[file_base_name] = f'{prefix}{file_base_name_excluding_ext}'
 
 print(json.dumps(file_dict, indent=True))

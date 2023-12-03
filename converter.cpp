@@ -23,29 +23,32 @@ std::string gen_uuid() {
 }
 
 Converter::Converter(
-    QString inputJavaResourcePackPath_,
-    QString outputBedrockResourcePackDirPath_,
+    QString inputJavaResPackPath_,
+    QString outputBedResPackDirPath_,
 
-    int inputJavaResourcePackType_,
-    int outputBedrockResourcePackType_,
-    int bedrockResourcePackMCMetaUUIDType_,
+    int inputJavaResPackType_,
+    int outputBedResPackType_,
+    int bedResPackMCMetaUUIDType_,
 
-    QString bedrockResourcePackMCMetaUUID_
-) : inputJavaResourcePackPath(inputJavaResourcePackPath_),
-    outputBedrockResourcePackDirPath(outputBedrockResourcePackDirPath_),
-    inputJavaResourcePackType(inputJavaResourcePackType_),
-    outputBedrockResourcePackType(outputBedrockResourcePackType_),
-    bedrockResourcePackMCMetaUUIDType(bedrockResourcePackMCMetaUUIDType_),
-    bedrockResourcePackMCMetaUUID(bedrockResourcePackMCMetaUUID_)
+    QString bedResPackMCMetaUUID_
+) : inputJavaResPackPath(inputJavaResPackPath_),
+    outputBedResPackDirPath(outputBedResPackDirPath_),
+    inputJavaResPackType(inputJavaResPackType_),
+    outputBedResPackType(outputBedResPackType_),
+    bedResPackMCMetaUUIDType(bedResPackMCMetaUUIDType_),
+    bedResPackMCMetaUUID(bedResPackMCMetaUUID_)
 {
-    this->conversionFunctions.insert("convert_item_clock", &Converter::convert_item_clock);
-    this->conversionFunctions.insert("convert_item_compass", &Converter::convert_item_compass);
-    this->conversionFunctions.insert("convert_item_recovery_compass", &Converter::convert_item_recovery_compass);
+    conversionFunctions.insert("convert_item_clock", &Converter::convert_item_clock);
+    conversionFunctions.insert("convert_item_compass", &Converter::convert_item_compass);
+    conversionFunctions.insert("convert_item_recovery_compass", &Converter::convert_item_recovery_compass);
+    conversionFunctions.insert("convert_item_leather_boots", &Converter::convert_item_leather_boots);
+    conversionFunctions.insert("convert_item_leather_helmet", &Converter::convert_item_leather_helmet);
+    conversionFunctions.insert("convert_item_leather_leggings", &Converter::convert_item_leather_leggings);
 
-    if (this->inputJavaResourcePackPath.isEmpty() or this->inputJavaResourcePackPath.isNull()) throw std::invalid_argument("Input file path was not given.");
-    if (this->outputBedrockResourcePackDirPath.isEmpty() or this->outputBedrockResourcePackDirPath.isNull()) throw std::invalid_argument("Output directory was not given.");
+    if (inputJavaResPackPath.isEmpty() or inputJavaResPackPath.isNull()) throw std::invalid_argument("Input file path was not given.");
+    if (outputBedResPackDirPath.isEmpty() or outputBedResPackDirPath.isNull()) throw std::invalid_argument("Output directory was not given.");
 
-    this->loadData();
+    loadData();
 }
 
 void Converter::unzipFile(QString srcFilePath_, QString destinationDirectoryPath_) {
@@ -153,7 +156,7 @@ void Converter::zipDir(QString srcDirPath_, QString zippedFilePath_) {
                 continue;
             }
         } else if (fileInfo.isDir()) {
-            this->addDirToZip(zipArchive, zipSource, fileInfo, srcDir);
+            addDirToZip(zipArchive, zipSource, fileInfo, srcDir);
         }
     }
 
@@ -186,7 +189,7 @@ void Converter::addDirToZip(zip_t* zipArchive, zip_source_t* zipSource, QFileInf
             }
 
         } else if (fileInfo.isDir())       {
-            this->addDirToZip(zipArchive, zipSource, fileInfo, rootSrcDir);
+            addDirToZip(zipArchive, zipSource, fileInfo, rootSrcDir);
         }
     }
 }
@@ -216,184 +219,184 @@ void Converter::loadData() {
     QDir().mkdir("tmp");
 
     // loading input resource pack into temperary directory
-    this->javaResourcePackTempPath = tmpDir.path() + "/Java Resource Pack";
-    if (this->inputJavaResourcePackType == 0) {
+    javaResPackTempPath = tmpDir.path() + "/java-resource-pack";
+
+    if (inputJavaResPackType == 0) {
         qDebug() << "[DEBUG] Input resource pack type is zip file.";
 
-        QStringList _ = this->inputJavaResourcePackPath.split('/').last().split('.');
+        QStringList _ = inputJavaResPackPath.split('/').last().split('.');
         _.removeLast();
+        javaResPackName = _.join('.') + " " + gen_uuid().c_str();
 
-        qDebug() << "[DEBUG] Unzipping input resource pack to temperary directory.";
-        this->javaResourcePackName = _.join('/');
-        this->unzipFile(this->inputJavaResourcePackPath, tmpDir.path() + "/Java Resource Pack");
+        qDebug() << "[DEBUG] Unzipping input java resource pack into a temperary directory.";
+        unzipFile(inputJavaResPackPath, javaResPackTempPath);
     } else {
-        qDebug() << "[DEBUG] Input resource pack type is folderI would say that.";
+        qDebug() << "[DEBUG] Input resource pack type is folder.";
+
+        javaResPackName = inputJavaResPackPath.split('/').last();
 
         qDebug() << "[DEBUG] Coppying input resource pack to temperary directory.";
-        this->javaResourcePackName = this->inputJavaResourcePackPath.split('/').last();
-        this->copyDir(this->inputJavaResourcePackPath, tmpDir.path() + "/Java Resource Pack");
+        copyDir(inputJavaResPackPath, javaResPackTempPath);
     }
 
-    // output resource pack stuff
-    this->bedrockResourcePackTempPath = tmpDir.path() + "/Bedrock Resource Pack";
-    QDir().mkdir(this->bedrockResourcePackTempPath);
+    // temperary output directory
+    bedResPackTempPath = tmpDir.path() + "/bedreock-resource-pack";
+    QDir().mkdir(bedResPackTempPath);
 
-    // loading resource pack configuration
-    QFile packConfigFile = QFile(this->javaResourcePackTempPath + "/pack.mcmeta");
+    // resource pack configuration
+    QFile packConfigFile = QFile(javaResPackTempPath + "/pack.mcmeta");
     packConfigFile.open(QFile::ReadOnly);
     QJsonDocument packConfigJsonDoc = QJsonDocument::fromJson(packConfigFile.readAll());
     packConfigFile.close();
 
     if (packConfigJsonDoc.isObject()) {
-        this->javaResourcePackConfig = packConfigJsonDoc.object();
+        javaResPackConfig = packConfigJsonDoc.object();
     }
 
-    // TODO: this->resourcePackConfigFormat = this->resourcePackConfig["pack"].toObject()["pack_format"].toInt(0);
-    this->javaResourcePackDesc = this->javaResourcePackConfig["pack"].toObject()["description"].toString();
+    javaResPackConfigFormat = javaResPackConfig["pack"].toObject()["pack_format"].toInt(0);
+    javaResPackDesc = javaResPackConfig["pack"].toObject()["description"].toString();
 
-    // loading conversion pattern
-    this->loadIdentityPatterns();
+    // id maps
+    loadIdMaps();
 }
-void Converter::loadIdentityPatterns() {
-    QFile javaIdentityMapFile = QFile(":/identity_maps_java/assets/identity_maps/identity_maps_java/identity_map_java_" + QString::number(this->javaResourcePackConfigFormat) + ".json");
-    QFile bedrockIdentityMapFile = QFile(":/identity_maps_bedrock/assets/identity_maps/identity_maps_bedrock/identity_map_bedrock_" + QString::number(this->javaResourcePackConfigFormat) + ".json");
+void Converter::loadIdMaps() {
+    QFile javaIdMapFile = QFile(QCoreApplication::applicationDirPath() + "/assets/id-maps/java/" + QString::number(javaResPackConfigFormat) + ".json");
+    QFile bedIdMapFile = QFile(QCoreApplication::applicationDirPath() + "/assets/id-maps/bedrock/latest.json");
 
-    javaIdentityMapFile.open(QFile::ReadOnly);
-    bedrockIdentityMapFile.open(QFile::ReadOnly);
+    javaIdMapFile.open(QIODevice::ReadOnly | QIODevice::Text);
+    bedIdMapFile.open(QIODevice::ReadOnly | QIODevice::Text);
 
-    QJsonDocument javaIdentityMapJsonDoc = QJsonDocument::fromJson(javaIdentityMapFile.readAll());
-    QJsonDocument bedrockIdentityMapJsonDoc = QJsonDocument::fromJson(bedrockIdentityMapFile.readAll());
+    QJsonDocument javaIdentityMapJsonDoc = QJsonDocument::fromJson(javaIdMapFile.readAll());
+    QJsonDocument bedIdentityMapJsonDoc = QJsonDocument::fromJson(bedIdMapFile.readAll());
 
-    javaIdentityMapFile.close();
-    bedrockIdentityMapFile.close();
+    javaIdMapFile.close();
+    bedIdMapFile.close();
 
     if (javaIdentityMapJsonDoc.isObject()) {
-        this->javaIdentityMap = javaIdentityMapJsonDoc.object();
+        javaIdMap = javaIdentityMapJsonDoc.object();
     }
-    if (bedrockIdentityMapJsonDoc.isObject()) {
-        this->bedrockIdentityMap = bedrockIdentityMapJsonDoc.object();
+    if (bedIdentityMapJsonDoc.isObject()) {
+        bedIdMap = bedIdentityMapJsonDoc.object();
     }
 }
 
 void Converter::startConversion() {
     qDebug() << "[DEBUG] Starting conversion.";
 
-    this->convert();
+    convert();
 
-    if (this->outputBedrockResourcePackType == 0) {
+    if (outputBedResPackType == 0) {
         qDebug() << "[DEBUG] Zipping the output resource pack into .mcpack zip archive.";
-        this->zipDir(this->bedrockResourcePackTempPath, this->outputBedrockResourcePackDirPath + "/" + this->javaResourcePackName + " (converted).mcpack");
+        zipDir(bedResPackTempPath, outputBedResPackDirPath + "/" + javaResPackName + " (converted).mcpack");
     } else {
         qDebug() << "[DEBUG] Copying the output resource pack to output directory.";
-        this->copyDir(this->bedrockResourcePackTempPath, this->outputBedrockResourcePackDirPath + "/" + this->javaResourcePackName + " (converted)");
+        copyDir(bedResPackTempPath, outputBedResPackDirPath + "/" + javaResPackName + " (converted)");
     }
 
     qDebug() << "[DEBUG] Conversion done.";
 }
 
 void Converter::convert() {
-    QDir javaResourcePackTempDir = QDir(this->javaResourcePackTempPath);
+    QDir javaResPackTempDir = QDir(javaResPackTempPath);
 
-    foreach(const QFileInfo info, javaResourcePackTempDir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot)) {
-        if (info.isFile()) convertFile(info, this->javaIdentityMap[info.fileName()]);
-        else if (info.isDir()) convertDir(info, this->javaIdentityMap[info.fileName()]);
+    foreach(const QFileInfo info, javaResPackTempDir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot)) {
+        if (info.isFile()) convertFile(info, javaIdMap[info.fileName()]);
+        else if (info.isDir()) convertDir(info, javaIdMap[info.fileName()]);
     }
 }
-void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef identityRef) {
-    if (identityRef.isNull() || identityRef.isUndefined()) {
+void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef idRef) {
+    if (idRef.isNull() || idRef.isUndefined()) {
         return;
     }
-    QString identity = identityRef.toString();
+    QString id = idRef.toString();
 
-    if (this->bedrockIdentityMap[identity].isNull() || this->bedrockIdentityMap[identity].isUndefined()) {
+    if (bedIdMap[id].isNull() || bedIdMap[id].isUndefined()) {
         return;
     }
-    QString bedrockEquivelent = this->bedrockIdentityMap[identity].toString();
+    QString bedEquivelent = bedIdMap[id].toString();
 
-    if (bedrockEquivelent.startsWith("$")) {
-        bedrockEquivelent = bedrockEquivelent.remove("$");
+    if (bedEquivelent.startsWith("$")) {
+        bedEquivelent = bedEquivelent.remove("$");
 
-        if (bedrockEquivelent == "convert_meta") {
-            QJsonObject bedrockManifest = QJsonObject();
-            QJsonObject bedrockManifestHeader = QJsonObject();
-            QJsonArray bedrockManifestModules = QJsonArray();
-            QJsonObject bedrockManifestModule = QJsonObject();
+        if (bedEquivelent == "convert_meta") {
+            QJsonObject bedManifest = QJsonObject();
+            QJsonObject bedManifestHeader = QJsonObject();
+            QJsonArray bedManifestModules = QJsonArray();
+            QJsonObject bedManifestModule = QJsonObject();
 
-            QJsonArray bedrockManifestResourceVersion = QJsonArray();
-            QJsonArray bedrockManifestMinEngineVersion = QJsonArray();
+            QJsonArray bedManifestResVersion = QJsonArray();
+            QJsonArray bedManifestMinEngineVersion = QJsonArray();
 
-            bedrockManifestResourceVersion.append(1);
-            bedrockManifestResourceVersion.append(0);
-            bedrockManifestResourceVersion.append(0);
+            bedManifestResVersion.append(1);
+            bedManifestResVersion.append(0);
+            bedManifestResVersion.append(0);
 
-            bedrockManifestMinEngineVersion.append(1);
-            bedrockManifestMinEngineVersion.append(19);
-            bedrockManifestMinEngineVersion.append(40);
+            bedManifestMinEngineVersion.append(1);
+            bedManifestMinEngineVersion.append(19);
+            bedManifestMinEngineVersion.append(40);
 
-            bedrockManifestModule.insert("description", this->javaResourcePackDesc);
-            bedrockManifestModule.insert("type", "resources");
-            bedrockManifestModule.insert("uuid", QString(gen_uuid().c_str()));
-            bedrockManifestModule.insert("version", bedrockManifestResourceVersion);
+            bedManifestModule.insert("description", javaResPackDesc);
+            bedManifestModule.insert("type", "resources");
+            bedManifestModule.insert("uuid", QString(gen_uuid().c_str()));
+            bedManifestModule.insert("version", bedManifestResVersion);
 
-            bedrockManifestModules.append(bedrockManifestModule);
+            bedManifestModules.append(bedManifestModule);
 
-            bedrockManifestHeader.insert("description", this->javaResourcePackDesc);
-            bedrockManifestHeader.insert("name", this->javaResourcePackName);
-            if (bedrockResourcePackMCMetaUUIDType == 0) bedrockManifestHeader.insert("uuid", QString(gen_uuid().c_str()));
-            else bedrockManifestHeader.insert("uuid", QString(gen_uuid().c_str()));
-            bedrockManifestHeader.insert("version", bedrockManifestResourceVersion);
-            bedrockManifestHeader.insert("min_engine_version", bedrockManifestMinEngineVersion);
+            bedManifestHeader.insert("description", javaResPackDesc);
+            bedManifestHeader.insert("name", javaResPackName);
+            if (bedResPackMCMetaUUIDType == 0) bedManifestHeader.insert("uuid", QString(gen_uuid().c_str()));
+            else bedManifestHeader.insert("uuid", QString(gen_uuid().c_str()));
+            bedManifestHeader.insert("version", bedManifestResVersion);
+            bedManifestHeader.insert("min_engine_version", bedManifestMinEngineVersion);
 
-            bedrockManifest.insert("format_version", 2);
-            bedrockManifest.insert("header", bedrockManifestHeader);
-            bedrockManifest.insert("modules", bedrockManifestModules);
+            bedManifest.insert("format_version", 2);
+            bedManifest.insert("header", bedManifestHeader);
+            bedManifest.insert("modules", bedManifestModules);
 
-            QFile bedrockManifestFile = QFile(this->bedrockResourcePackTempPath + "/manifest.json");
-            bedrockManifestFile.open(QFile::WriteOnly);
+            QFile bedManifestFile = QFile(bedResPackTempPath + "/manifest.json");
+            bedManifestFile.open(QFile::WriteOnly);
 
-            bedrockManifestFile.write(QJsonDocument(bedrockManifest).toJson());
+            bedManifestFile.write(QJsonDocument(bedManifest).toJson());
 
-            bedrockManifestFile.close();
+            bedManifestFile.close();
         }
         else {
-            if (Converter::conversionFunctions.contains(bedrockEquivelent)) {
-                (this->*conversionFunctions.value(bedrockEquivelent))(fileInfo.canonicalPath(), bedrockResourcePackTempPath);
+            if (Converter::conversionFunctions.contains(bedEquivelent)) {
+                (this->*conversionFunctions.value(bedEquivelent))(fileInfo.canonicalPath(), bedResPackTempPath);
             } else {
-                std::cout << "[ERROR] Function not found: \"" << bedrockEquivelent.toStdString().c_str() << "\"" << std::endl;
+                std::cout << "[ERROR] Function not found: \"" << bedEquivelent.toStdString().c_str() << "\"" << std::endl;
                 return;
             }
         }
     } else {
-        QStringList newPaths = bedrockEquivelent.split("%and%");
+        QStringList newPaths = bedEquivelent.split("%and%");
 
-        cv::Mat image = cv::imread(fileInfo.canonicalFilePath().toStdString(), cv::IMREAD_UNCHANGED);
-
-        if (image.empty()) {
+        cv::Mat resImg = cv::imread(fileInfo.canonicalFilePath().toStdString(), cv::IMREAD_UNCHANGED);
+        if (resImg.empty()) {
             qDebug() << "Can not open image:" << fileInfo.canonicalFilePath();
             return;
         }
 
         foreach(QString newPath, newPaths) {
-            QDir().mkpath(this->bedrockResourcePackTempPath + "/" + newPath.split('/').first(newPath.split('/').length() - 1).join('/'));
-            std::string imageFileFormat = newPath.split('.').last().toUpper().toStdString();
+            QDir().mkpath(bedResPackTempPath + "/" + newPath.split('/').first(newPath.split('/').length() - 1).join('/'));
+            std::string resImgFormat = newPath.split('.').last().toUpper().toStdString();
 
-            if (imageFileFormat == "TGA") {
-                int CHANNELS = image.channels();
-
-                stbi_write_tga((this->bedrockResourcePackTempPath + "/" + newPath).toStdString().c_str(), image.size().width, image.size().height, CHANNELS, image.data);
+            if (resImgFormat == "TGA") {
+                int CHANNELS = resImg.channels();
+                stbi_write_tga((bedResPackTempPath + "/" + newPath).toStdString().c_str(), resImg.size().width, resImg.size().height, CHANNELS, resImg.data);
             } else {
-                cv::imwrite((this->bedrockResourcePackTempPath + "/" + newPath).toStdString(), image);
+                cv::imwrite((bedResPackTempPath + "/" + newPath).toStdString(), resImg);
             }
         }
     }
 }
-void Converter::convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef) {
-    if (identityMapRef.isNull() || identityMapRef.isUndefined()) return;
-    QJsonObject identityMap = identityMapRef.toObject();
+void Converter::convertDir(QFileInfo dirInfo, QJsonValueRef idMapRef) {
+    if (idMapRef.isNull() || idMapRef.isUndefined()) return;
+    QJsonObject idMap = idMapRef.toObject();
 
     foreach(const QFileInfo info, QDir(dirInfo.absoluteFilePath()).entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot)) {
-        if (info.isFile()) convertFile(info, identityMap[info.fileName()]);
-        else if (info.isDir()) convertDir(info, identityMap[info.fileName()]);
+        if (info.isFile()) convertFile(info, idMap[info.fileName()]);
+        else if (info.isDir()) convertDir(info, idMap[info.fileName()]);
     }
 }
 
@@ -419,7 +422,6 @@ void Converter::convert_item_clock(QString inputDir, QString outputDir) {
 
         clock.copyTo(atlas(cv::Rect(0, clockHeight * i, clockWidth, clockHeight)));
     }
-
 
     cv::imwrite(outputPathAtlas.toStdString(), atlas);
 }
@@ -474,4 +476,31 @@ void Converter::convert_item_recovery_compass(QString inputDir, QString outputDi
 
 
     cv::imwrite(outputPathAtlas.toStdString(), atlas);
+}
+void Converter::convert_item_leather_boots(QString inputDir, QString outputDir) {
+    cv::Mat itemImg = cv::imread((inputDir + "/leather_boots.png").toStdString(), cv::IMREAD_UNCHANGED);
+    cv::Mat itemOverlayImg = cv::imread((inputDir + "/leather_boots_overlay.png").toStdString(), cv::IMREAD_UNCHANGED);
+
+    cv::Mat insetImage(itemImg, cv::Rect(0, 0, itemImg.size().width, itemImg.size().height));
+    itemOverlayImg.copyTo(insetImage);
+
+    stbi_write_tga((outputDir + "/leater_boots.png").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
+}
+void Converter::convert_item_leather_helmet(QString inputDir, QString outputDir){
+    cv::Mat itemImg = cv::imread((inputDir + "/leather_helmet.png").toStdString(), cv::IMREAD_UNCHANGED);
+    cv::Mat itemOverlayImg = cv::imread((inputDir + "/leather_helmet_overlay.png").toStdString(), cv::IMREAD_UNCHANGED);
+
+    cv::Mat insetImage(itemImg, cv::Rect(0, 0, itemImg.size().width, itemImg.size().height));
+    itemOverlayImg.copyTo(insetImage);
+
+    stbi_write_tga((outputDir + "/leater_helmet.png").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
+}
+void Converter::convert_item_leather_leggings(QString inputDir, QString outputDir){
+    cv::Mat itemImg = cv::imread((inputDir + "/leather_leggings.png").toStdString(), cv::IMREAD_UNCHANGED);
+    cv::Mat itemOverlayImg = cv::imread((inputDir + "/leather_leggings_overlay.png").toStdString(), cv::IMREAD_UNCHANGED);
+
+    cv::Mat insetImage(itemImg, cv::Rect(0, 0, itemImg.size().width, itemImg.size().height));
+    itemOverlayImg.copyTo(insetImage);
+
+    stbi_write_tga((outputDir + "/leater_leggings.png").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
 }

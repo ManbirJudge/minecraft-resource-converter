@@ -1,42 +1,42 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+// initialization
 MainWindow::MainWindow(QWidget *parent):
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-
     // setting up ui
     ui->setupUi(this);
 
-    ui->javaResourcePackTypeCombo->addItems(this->JAVA_RESOURCE_PACK_TYPES);
-    ui->bedrockResourcePackTypeCombo->addItems(this->BEDROCK_RESOURCE_PACK_TYPES);
-    ui->bedrockResourcePackMCMetaUUIDComboBox->addItems(this->BEDROCK_RESOURCE_PACK_MCMETA_UUID_OPTIONS);
+    ui->javaResPackTypeCombo->addItems(JAVA_RESOURCE_PACK_TYPES);
+    ui->bedResPackTypeCombo->addItems(BEDROCK_RESOURCE_PACK_TYPES);
+    ui->bedResPackMCMetaUUIDComboBox->addItems(BEDROCK_RESOURCE_PACK_MCMETA_UUID_OPTIONS);
 
-    ui->javaResourcePackTypeCombo->setCurrentIndex(0);
-    ui->bedrockResourcePackTypeCombo->setCurrentIndex(0);
-    ui->bedrockResourcePackMCMetaUUIDComboBox->setCurrentIndex(0);
-    // ui->bedrockResourcePackMCMetaUUIDComboBox->setCurrentIndex(1);
-    // this->bedrockResourcePackMCMetaUUIDTypeChanged(1);
+    ui->javaResPackTypeCombo->setCurrentIndex(0);
+    ui->bedResPackTypeCombo->setCurrentIndex(0);
+    // ui->bedResPackMCMetaUUIDComboBox->setCurrentIndex(0);
+    ui->bedResPackMCMetaUUIDComboBox->setCurrentIndex(1);
+    bedResPackMCMetaUUIDTypeChanged(1);
 
-    ui->javaResourcePackLineEdit->setText(this->javaResourcePackPath);
-    ui->bedrockResourcePackLineEdit->setText(this->bedrockResourcePackOutputPath);
+    ui->javaResPackLineEdit->setText(javaResPackPath);
+    ui->bedResPackLineEdit->setText(bedResPackOutputPath);
 
     ui->conversionStatusLabel->hide();
     ui->conversionStatusProgressBar->hide();
 
-    this->setFixedHeight(sizeHint().height());
+    setFixedHeight(sizeHint().height());
 
     // loading settings
-    this->loadSettings();
+    loadSettings();
 
     // event listeners
-    connect(ui->javaResourcePackBrowseBtn, SIGNAL(clicked()), this, SLOT(javaResourcePackBrowseBtnClicked()));
-    connect(ui->bedrockResourcePackBrowseBtn, SIGNAL(clicked()), this, SLOT(bedrockResourcePackBrowseBtnClicked()));
+    connect(ui->javaResPackBrowseBtn, SIGNAL(clicked()), this, SLOT(javaResPackBrowseBtnClicked()));
+    connect(ui->bedResPackBrowseBtn, SIGNAL(clicked()), this, SLOT(bedResPackBrowseBtnClicked()));
 
-    connect(ui->javaResourcePackTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(javaResourcePackTypeChanged(int)));
-    connect(ui->bedrockResourcePackTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(bedrockResourcePackTypeChanged(int)));
-    connect(ui->bedrockResourcePackMCMetaUUIDComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(bedrockResourcePackMCMetaUUIDTypeChanged(int)));
+    connect(ui->javaResPackTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(javaResPackTypeChanged(int)));
+    connect(ui->bedResPackTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(bedResPackTypeChanged(int)));
+    connect(ui->bedResPackMCMetaUUIDComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(bedResPackMCMetaUUIDTypeChanged(int)));
 
     connect(ui->startConversionBtn, SIGNAL(clicked()), this, SLOT(convertBtnClicked()));
 
@@ -53,28 +53,29 @@ void MainWindow::loadSettings() {
         QJsonDocument settingsJsonDoc = QJsonDocument::fromJson(settingsJsonFile.readAll());
 
         if (settingsJsonDoc.isObject()) {
-            this->settings = settingsJsonDoc.object();
+            settings = settingsJsonDoc.object();
         }
     } else {
-        this->settings.insert("show_conversion_warning_dialog", false);
-        this->settings.insert("use_system_explorer", true);
-        this->settings.insert("explorer_default_path", QDir::homePath());
+        settings.insert("show_conversion_warning_dialog", false);
+        settings.insert("use_system_explorer", true);
+        settings.insert("explorer_default_path", QDir::homePath());
     }
 }
 
-void MainWindow::javaResourcePackBrowseBtnClicked() {
+// event handlers
+void MainWindow::javaResPackBrowseBtnClicked() {
     QString newPath;
     QFileDialog::Options dialogOptions;
 
-    if (not this->settings.find("use_system_explorer")->toBool()) {
+    if (not settings.find("use_system_explorer")->toBool()) {
         dialogOptions = QFileDialog::Option::DontUseNativeDialog;
     }
 
-    if (ui->javaResourcePackTypeCombo->currentIndex() == 0) {
+    if (ui->javaResPackTypeCombo->currentIndex() == 0) {
         newPath = QFileDialog::getOpenFileName(
             this,
             "Select java resource pack",
-            this->settings.find("explorer_default_path")->toString(),
+            settings.find("explorer_default_path")->toString(),
             "Zip Files (*.zip);;All (*)",
             nullptr,
             dialogOptions
@@ -83,83 +84,79 @@ void MainWindow::javaResourcePackBrowseBtnClicked() {
         newPath = QFileDialog::getExistingDirectory(
             this,
             "Select java resource pack",
-            this->settings.find("explorer_default_path")->toString(),
+            settings.find("explorer_default_path")->toString(),
             dialogOptions
         );
     }
 
     if (!newPath.isEmpty() && !newPath.isNull()) {
-        javaResourcePackPath = newPath;
-        ui->javaResourcePackLineEdit->setText(javaResourcePackPath);
+        javaResPackPath = newPath;
+        ui->javaResPackLineEdit->setText(javaResPackPath);
     }
 }
-void MainWindow::bedrockResourcePackBrowseBtnClicked() {
+void MainWindow::bedResPackBrowseBtnClicked() {
     QFileDialog::Options dialogOptions;
-    if (not this->settings.find("use_system_explorer")->toBool()) {
+    if (not settings.find("use_system_explorer")->toBool()) {
         dialogOptions = QFileDialog::Option::DontUseNativeDialog;
     }
 
     QString newPath = QFileDialog::getExistingDirectory(
         this,
         "Select output directory",
-        this->settings.find("default_explorer_path")->toString(),
+        settings.find("default_explorer_path")->toString(),
         dialogOptions
     );
 
     if (!newPath.isEmpty() && !newPath.isNull()) {
-        bedrockResourcePackOutputPath = newPath;
-        ui->bedrockResourcePackLineEdit->setText(bedrockResourcePackOutputPath);
+        bedResPackOutputPath = newPath;
+        ui->bedResPackLineEdit->setText(bedResPackOutputPath);
     }
 }
 
-void MainWindow::javaResourcePackTypeChanged(int index) {
-    this->javaResourcePackType = this->JAVA_RESOURCE_PACK_TYPES[index];
+void MainWindow::javaResPackTypeChanged(int index) {
+    javaResPackType = JAVA_RESOURCE_PACK_TYPES[index];
 }
-void MainWindow::bedrockResourcePackTypeChanged(int index) {
-    this->bedrockResourcePackType = this->BEDROCK_RESOURCE_PACK_TYPES[index];
+void MainWindow::bedResPackTypeChanged(int index) {
+    bedResPackType = BEDROCK_RESOURCE_PACK_TYPES[index];
 }
-void MainWindow::bedrockResourcePackMCMetaUUIDTypeChanged(int index) {
-    if (index == 0) ui->bedrockResourcePackMCMetaUUIDLineEdit->setEnabled(false);
-    else ui->bedrockResourcePackMCMetaUUIDLineEdit->setEnabled(true);
+void MainWindow::bedResPackMCMetaUUIDTypeChanged(int index) {
+    if (index == 0) ui->bedResPackMCMetaUUIDLineEdit->setEnabled(false);
+    else ui->bedResPackMCMetaUUIDLineEdit->setEnabled(true);
 }
 
+// conversion functions
 void MainWindow::convertBtnClicked() {
-    if (this->settings["show_conversion_warning_dialog"].toBool()) {
+    if (settings["show_conversion_warning_dialog"].toBool()) {
         QMessageBox* warningDialog = new QMessageBox();
 
         warningDialog->setWindowTitle("Warning");
-        warningDialog->setText("The programme might not work or might break your game and some textures might not get converted as intended. Use it at your own risk.");
+        warningDialog->setText("The programme might not work or might break your game or some textures might not get converted as intended. Use it at your own risk.");
         warningDialog->setInformativeText("Do you want to continue?");
         warningDialog->setStandardButtons(QMessageBox::Button::Yes | QMessageBox::Button::No);
         warningDialog->setIcon(QMessageBox::Icon::Warning);
 
         if (warningDialog->exec() == QMessageBox::DialogCode::Accepted) {
-            Converter *converter = new Converter(
-                this->javaResourcePackPath,
-                this->bedrockResourcePackOutputPath,
-                ui->javaResourcePackTypeCombo->currentIndex(),
-                ui->bedrockResourcePackTypeCombo->currentIndex(),
-                ui->bedrockResourcePackMCMetaUUIDComboBox->currentIndex(),
-                ui->bedrockResourcePackMCMetaUUIDLineEdit->text()
-            );
-            converter->startConversion();
-            delete converter;
+            startConversion();
         }
 
     } else {
-        Converter *converter = new Converter(
-            this->javaResourcePackPath,
-            this->bedrockResourcePackOutputPath,
-            ui->javaResourcePackTypeCombo->currentIndex(),
-            ui->bedrockResourcePackTypeCombo->currentIndex(),
-            ui->bedrockResourcePackMCMetaUUIDComboBox->currentIndex(),
-            ui->bedrockResourcePackMCMetaUUIDLineEdit->text()
-        );
-        converter->startConversion();
-        delete converter;
+        startConversion();
     }
 }
+void MainWindow::startConversion() {
+    Converter *converter = new Converter(
+        javaResPackPath,
+        bedResPackOutputPath,
+        ui->javaResPackTypeCombo->currentIndex(),
+        ui->bedResPackTypeCombo->currentIndex(),
+        ui->bedResPackMCMetaUUIDComboBox->currentIndex(),
+        ui->bedResPackMCMetaUUIDLineEdit->text()
+    );
+    converter->startConversion();
+    delete converter;
+}
 
+// help/utility buttons
 void MainWindow::settingsBtnClicked() {
     SettingsDialog* settingsDialog = new SettingsDialog(this);
 
@@ -178,9 +175,10 @@ void MainWindow::helpBtnClicked() {
 }
 void MainWindow::settingsDialogClosed(int result) {
     qDebug() << "[DEBUG] Settings dialog closed with result:" << result;
-    this->loadSettings();
+    loadSettings();
 }
 
+// destruction
 MainWindow::~MainWindow()
 {
     delete ui;

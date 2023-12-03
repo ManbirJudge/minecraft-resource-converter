@@ -21,14 +21,15 @@ public:
     ~MainWindow();
 
 private slots:
-    void javaResourcePackBrowseBtnClicked();
-    void bedrockResourcePackBrowseBtnClicked();
+    void javaResPackBrowseBtnClicked();
+    void bedResPackBrowseBtnClicked();
 
-    void javaResourcePackTypeChanged(int index);
-    void bedrockResourcePackTypeChanged(int index);
-    void bedrockResourcePackMCMetaUUIDTypeChanged(int index);
+    void javaResPackTypeChanged(int index);
+    void bedResPackTypeChanged(int index);
+    void bedResPackMCMetaUUIDTypeChanged(int index);
 
     void convertBtnClicked();
+    void startConversion();
 
     void settingsBtnClicked();
     void aboutBtnClicked();
@@ -46,13 +47,13 @@ private:
     const QStringList BEDROCK_RESOURCE_PACK_TYPES = { "McPack (.mcpack)", "Folder" };
     const QStringList BEDROCK_RESOURCE_PACK_MCMETA_UUID_OPTIONS = { "Random", "Custom" };
 
-    QString javaResourcePackPath = "C:/Users/manbi/Downloads/Faithful 64x.zip";
-    QString bedrockResourcePackOutputPath = "D:/Manbir";
-    // QString javaResourcePackPath = "";
-    // QString bedrockResourcePackOutputPath = "";
+    QString javaResPackPath = "D:/Manbir/Dandelion X 1.20.2.zip";
+    QString bedResPackOutputPath = "D:/Manbir";
+    // QString javaResPackPath = "";
+    // QString bedResPackOutputPath = "";
 
-    QString javaResourcePackType = this->BEDROCK_RESOURCE_PACK_TYPES[0];
-    QString bedrockResourcePackType = this->JAVA_RESOURCE_PACK_TYPES[0];
+    QString javaResPackType = this->BEDROCK_RESOURCE_PACK_TYPES[0];
+    QString bedResPackType = this->JAVA_RESOURCE_PACK_TYPES[0];
 
     QJsonObject settings;
 };

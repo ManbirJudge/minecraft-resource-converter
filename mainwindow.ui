@@ -52,12 +52,12 @@
        </sizepolicy>
       </property>
       <property name="text">
-       <string>Java Resource Pack</string>
+       <string>Java Resource Pack Path</string>
       </property>
      </widget>
     </item>
     <item row="3" column="0">
-     <widget class="QComboBox" name="bedrockResourcePackTypeCombo"/>
+     <widget class="QComboBox" name="bedResPackTypeCombo"/>
     </item>
     <item row="8" column="0" colspan="3">
      <widget class="QProgressBar" name="conversionStatusProgressBar">
@@ -95,9 +95,12 @@
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="2">
-        <widget class="QLineEdit" name="bedrockResourcePackMCMetaUUIDLineEdit">
+        <widget class="QLineEdit" name="bedResPackMCMetaUUIDLineEdit">
          <property name="enabled">
           <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>63c50539-bf15-5005-e4a8-a07995ef7175</string>
          </property>
         </widget>
        </item>
@@ -109,30 +112,26 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QComboBox" name="bedrockResourcePackMCMetaUUIDComboBox"/>
+        <widget class="QComboBox" name="bedResPackMCMetaUUIDComboBox"/>
        </item>
       </layout>
      </widget>
     </item>
     <item row="3" column="2">
-     <widget class="QToolButton" name="bedrockResourcePackBrowseBtn">
+     <widget class="QToolButton" name="bedResPackBrowseBtn">
       <property name="styleSheet">
        <string notr="true">padding: 2px 4px;</string>
       </property>
       <property name="text">
        <string>...</string>
       </property>
-      <property name="icon">
-       <iconset resource="assets.qrc">
-        <normaloff>:/icons/assets/icons/folder.svg</normaloff>:/icons/assets/icons/folder.svg</iconset>
-      </property>
      </widget>
     </item>
     <item row="1" column="0">
-     <widget class="QComboBox" name="javaResourcePackTypeCombo"/>
+     <widget class="QComboBox" name="javaResPackTypeCombo"/>
     </item>
     <item row="1" column="1">
-     <widget class="QLineEdit" name="javaResourcePackLineEdit">
+     <widget class="QLineEdit" name="javaResPackLineEdit">
       <property name="readOnly">
        <bool>true</bool>
       </property>
@@ -152,23 +151,19 @@
      </widget>
     </item>
     <item row="3" column="1">
-     <widget class="QLineEdit" name="bedrockResourcePackLineEdit">
+     <widget class="QLineEdit" name="bedResPackLineEdit">
       <property name="readOnly">
        <bool>true</bool>
       </property>
      </widget>
     </item>
     <item row="1" column="2">
-     <widget class="QToolButton" name="javaResourcePackBrowseBtn">
+     <widget class="QToolButton" name="javaResPackBrowseBtn">
       <property name="styleSheet">
        <string notr="true">padding: 2px 4px;</string>
       </property>
       <property name="text">
        <string>...</string>
-      </property>
-      <property name="icon">
-       <iconset resource="assets.qrc">
-        <normaloff>:/icons/assets/icons/folder.svg</normaloff>:/icons/assets/icons/folder.svg</iconset>
       </property>
      </widget>
     </item>
@@ -194,10 +189,6 @@
         </property>
         <property name="text">
          <string>...</string>
-        </property>
-        <property name="icon">
-         <iconset resource="assets.qrc">
-          <normaloff>:/icons/assets/icons/gear.svg</normaloff>:/icons/assets/icons/gear.svg</iconset>
         </property>
        </widget>
       </item>
@@ -256,8 +247,6 @@
    </layout>
   </widget>
  </widget>
- <resources>
-  <include location="assets.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

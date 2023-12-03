@@ -1,8 +1,0 @@
-<RCC>
-    <qresource prefix="/identity_maps_java">
-        <file>assets/identity_maps/identity_maps_java/identity_map_java_9.json</file>
-    </qresource>
-    <qresource prefix="/identity_maps_bedrock">
-        <file>assets/identity_maps/identity_maps_bedrock/identity_map_bedrock_9.json</file>
-    </qresource>
-</RCC>

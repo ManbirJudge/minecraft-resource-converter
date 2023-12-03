@@ -11,13 +11,19 @@ This is a simple application that can convert your Minecraft Java resource packs
 ## TODOS
 - Carried textures  ⏳
 - All entity textures ⏳
-- Fonts 🏃
+- Fonts ⏳
 - Homepage title 🏃
-- Paintings 🏃
+- Paintings ⏳
 - Sounds 🚧
 - Sheep textures 🚧
 - Custom models (optifine equivalent) ❌
 - Progress bar to show conversion progress ⏳
+- Individual items -
+    - Decorated pot
+    - Conduit textures
+    - Potion textures
+    - Bed item texture
+    
 
 ## Building from source
 - Prequesties - OpenCV DLLs, libzip and zlib.

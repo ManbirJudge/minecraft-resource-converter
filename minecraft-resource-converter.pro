@@ -44,6 +44,4 @@ DEPENDPATH += "C:\Users\manbi\Libraries\opencv\include"
 
 
 # including resources
-RESOURCES += \
-    assets.qrc \
-    identity_maps.qrc
+RESOURCES +=
