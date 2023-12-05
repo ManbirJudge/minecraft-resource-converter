@@ -44,6 +44,9 @@ Converter::Converter(
     conversionFunctions.insert("convert_item_leather_boots", &Converter::convert_item_leather_boots);
     conversionFunctions.insert("convert_item_leather_helmet", &Converter::convert_item_leather_helmet);
     conversionFunctions.insert("convert_item_leather_leggings", &Converter::convert_item_leather_leggings);
+    conversionFunctions.insert("convert_grass", &Converter::convert_grass);
+    conversionFunctions.insert("convert_grass_block_top", &Converter::convert_grass_block_top);
+    conversionFunctions.insert("convert_tall_grass_top", &Converter::convert_tall_grass_top);
 
     if (inputJavaResPackPath.isEmpty() or inputJavaResPackPath.isNull()) throw std::invalid_argument("Input file path was not given.");
     if (outputBedResPackDirPath.isEmpty() or outputBedResPackDirPath.isNull()) throw std::invalid_argument("Output directory was not given.");
@@ -362,6 +365,7 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef idRef) {
         }
         else {
             if (Converter::conversionFunctions.contains(bedEquivelent)) {
+                qDebug() << "Calling:" << bedEquivelent;
                 (this->*conversionFunctions.value(bedEquivelent))(fileInfo.canonicalPath(), bedResPackTempPath);
             } else {
                 std::cout << "[ERROR] Function not found: \"" << bedEquivelent.toStdString().c_str() << "\"" << std::endl;
@@ -398,6 +402,47 @@ void Converter::convertDir(QFileInfo dirInfo, QJsonValueRef idMapRef) {
         if (info.isFile()) convertFile(info, idMap[info.fileName()]);
         else if (info.isDir()) convertDir(info, idMap[info.fileName()]);
     }
+}
+cv::Mat Converter::applyTint(const cv::Mat& bgrImg, const cv::Vec3b& color) {
+    qDebug() << bgrImg.channels();
+
+    // gray to BGR
+    cv::Mat grayImg;
+    cv::cvtColor(bgrImg, grayImg, cv::COLOR_BGR2GRAY);
+
+    // normalize
+    // cv::Mat normalized;
+    // grayImg.convertTo(normalized, CV_32F, 1.0 / 255.0);
+
+    // scale the color
+    cv::Mat tinted(grayImg.rows, grayImg.cols, bgrImg.type());
+
+    if (bgrImg.channels() == 3) {
+        for (int i = 0; i < grayImg.rows; i++) {
+            for (int j = 0; j < grayImg.cols; j++) {
+                double normPixVal =  (int) grayImg.at<uchar>(i, j) / 255.0;
+                tinted.at<cv::Vec3b>(i, j) = cv::Vec3b(normPixVal * color[0], normPixVal * color[1], normPixVal * color[2]);
+            }
+        }
+    } else if (bgrImg.channels() == 4) {
+        for (int i = 0; i < grayImg.rows; i++) {
+            for (int j = 0; j < grayImg.cols; j++) {
+                double normPixVal =  (int) grayImg.at<uchar>(i, j) / 255.0;
+                tinted.at<cv::Vec4b>(i, j) = cv::Vec4b(
+                    normPixVal * color[0],
+                    normPixVal * color[1],
+                    normPixVal * color[2],
+                    bgrImg.at<cv::Vec4b>(i, j)[3]
+                );
+            }
+        }
+    }
+
+    // Blend the colored image with the original grayscale image
+    cv::Mat resultImg;
+    cv::addWeighted(bgrImg, 0.0, tinted, 1.0, 0.0, resultImg);
+
+    return tinted;
 }
 
 void Converter::convert_item_clock(QString inputDir, QString outputDir) {
@@ -448,7 +493,6 @@ void Converter::convert_item_compass(QString inputDir, QString outputDir) {
         compass.copyTo(atlas(cv::Rect(0, compassHeight * i, compassWidth, compassHeight)));
     }
 
-
     cv::imwrite(outputPathAtlas.toStdString(), atlas);
 }
 void Converter::convert_item_recovery_compass(QString inputDir, QString outputDir) {
@@ -478,29 +522,77 @@ void Converter::convert_item_recovery_compass(QString inputDir, QString outputDi
     cv::imwrite(outputPathAtlas.toStdString(), atlas);
 }
 void Converter::convert_item_leather_boots(QString inputDir, QString outputDir) {
+    outputDir = outputDir + "/textures/items";
+
     cv::Mat itemImg = cv::imread((inputDir + "/leather_boots.png").toStdString(), cv::IMREAD_UNCHANGED);
     cv::Mat itemOverlayImg = cv::imread((inputDir + "/leather_boots_overlay.png").toStdString(), cv::IMREAD_UNCHANGED);
 
-    cv::Mat insetImage(itemImg, cv::Rect(0, 0, itemImg.size().width, itemImg.size().height));
+    qDebug() << inputDir + "/leather_boots.png";
+
+    cv::Mat idktfigo;
+    cv::resize(itemImg, idktfigo, cv::Size(500, 500), 0, 0, cv::INTER_NEAREST);
+    cv::imshow("Original", idktfigo);
+    cv::resize(itemOverlayImg, idktfigo, cv::Size(500, 500), 0, 0, cv::INTER_NEAREST);
+    cv::imshow("Overlay", idktfigo);
+
+    cv::Mat insetImage(itemImg, cv::Rect(0, 0, itemImg.cols, itemImg.rows));
     itemOverlayImg.copyTo(insetImage);
 
-    stbi_write_tga((outputDir + "/leater_boots.png").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
+    cv::resize(itemImg, idktfigo, cv::Size(500, 500), 0, 0, cv::INTER_NEAREST);
+    cv::imshow("Final", idktfigo);
+
+    stbi_write_tga((outputDir + "/leather_boots.tga").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
 }
 void Converter::convert_item_leather_helmet(QString inputDir, QString outputDir){
+    outputDir = outputDir + "/textures/items";
+
     cv::Mat itemImg = cv::imread((inputDir + "/leather_helmet.png").toStdString(), cv::IMREAD_UNCHANGED);
     cv::Mat itemOverlayImg = cv::imread((inputDir + "/leather_helmet_overlay.png").toStdString(), cv::IMREAD_UNCHANGED);
 
     cv::Mat insetImage(itemImg, cv::Rect(0, 0, itemImg.size().width, itemImg.size().height));
     itemOverlayImg.copyTo(insetImage);
 
-    stbi_write_tga((outputDir + "/leater_helmet.png").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
+    stbi_write_tga((outputDir + "/leater_helmet.tga").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
 }
 void Converter::convert_item_leather_leggings(QString inputDir, QString outputDir){
+    outputDir = outputDir + "/textures/items";
+
     cv::Mat itemImg = cv::imread((inputDir + "/leather_leggings.png").toStdString(), cv::IMREAD_UNCHANGED);
     cv::Mat itemOverlayImg = cv::imread((inputDir + "/leather_leggings_overlay.png").toStdString(), cv::IMREAD_UNCHANGED);
 
     cv::Mat insetImage(itemImg, cv::Rect(0, 0, itemImg.size().width, itemImg.size().height));
     itemOverlayImg.copyTo(insetImage);
 
-    stbi_write_tga((outputDir + "/leater_leggings.png").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
+    stbi_write_tga((outputDir + "/leater_leggings.tga").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
 }
+void Converter::convert_grass(QString inputDir, QString outputDir){
+    outputDir = outputDir + "/textures/blocks";
+    cv::Mat grassImg = cv::imread((inputDir + "/grass.png").toStdString(), cv::IMREAD_UNCHANGED);
+
+    cv::Mat grassImgCarried = applyTint(grassImg, grassTint);
+
+    cv::imwrite((outputDir + "/tallgrass.png").toStdString(), grassImg);
+    stbi_write_tga((outputDir + "/tallgrass.tga").toStdString().c_str(), grassImg.size().width, grassImg.size().height, grassImg.channels(), grassImg.data);
+    cv::imwrite((outputDir + "/tallgrass_carried.png").toStdString(), grassImgCarried);
+}
+void Converter::convert_grass_block_top(QString inputDir, QString outputDir){
+    outputDir = outputDir + "/textures/blocks";
+    cv::Mat img = cv::imread((inputDir + "/grass_block_top.png").toStdString(),  cv::IMREAD_ANYDEPTH | cv::IMREAD_COLOR);
+
+    cv::Mat carried = applyTint(img, grassTint);
+
+    cv::imwrite((outputDir + "/grass_top.png").toStdString(), img);
+    cv::imwrite((outputDir + "/grass_carried.png").toStdString(), carried);
+}
+void Converter::convert_tall_grass_top(QString inputDir, QString outputDir){
+    outputDir = outputDir + "/textures/blocks";
+    cv::Mat img = cv::imread((inputDir + "/tall_grass_top.png").toStdString(), cv::IMREAD_UNCHANGED);
+
+    cv::Mat carried = applyTint(img, grassTint);
+
+    cv::imwrite((outputDir + "/double_plant_grass_carried.png").toStdString(), carried);
+    stbi_write_tga((outputDir + "/double_plant_grass_top.tga").toStdString().c_str(), img.size().width, img.size().height, img.channels(), img.data);
+}
+
+
+

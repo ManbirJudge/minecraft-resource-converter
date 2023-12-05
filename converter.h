@@ -47,6 +47,8 @@ public:
 
     void startConversion();
 
+    const cv::Vec3b grassTint {147, 223, 183};
+
 signals:
     void conversionProgress(int currentFile, int totalFiles, QString fileName);
 
@@ -91,6 +93,8 @@ private:
     void convertFile(QFileInfo fileInfo, QJsonValueRef identityRef);
     void convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef);
 
+    cv::Mat applyTint(const cv::Mat& grayImg, const cv::Vec3b& color);
+
     // on demand speical conversion functions (ODSCFs)
     void convert_item_clock(QString inputDir, QString outputDir);
     void convert_item_compass(QString inputDir, QString outputDir);
@@ -98,6 +102,9 @@ private:
     void convert_item_leather_boots(QString inputDir, QString outputDir);
     void convert_item_leather_helmet(QString inputDir, QString outputDir);
     void convert_item_leather_leggings(QString inputDir, QString outputDir);
+    void convert_grass(QString inputDir, QString outputDir);
+    void convert_grass_block_top(QString inputDir, QString outputDir);
+    void convert_tall_grass_top(QString inputDir, QString outputDir);
 
     QHash<QString, void(Converter::*)(const QString, const QString)> conversionFunctions;
 };

@@ -42,6 +42,5 @@ LIBS += "C:\Users\manbi\Libraries\opencv\mingw\lib\libopencv_imgproc460.dll.a"
 INCLUDEPATH += "C:\Users\manbi\Libraries\opencv\include"
 DEPENDPATH += "C:\Users\manbi\Libraries\opencv\include"
 
-
 # including resources
 RESOURCES +=

@@ -47,7 +47,7 @@ private:
     const QStringList BEDROCK_RESOURCE_PACK_TYPES = { "McPack (.mcpack)", "Folder" };
     const QStringList BEDROCK_RESOURCE_PACK_MCMETA_UUID_OPTIONS = { "Random", "Custom" };
 
-    QString javaResPackPath = "D:/Manbir/Dandelion X 1.20.2.zip";
+    QString javaResPackPath = "D:/Manbir/Faithful 32x Java.zip";
     QString bedResPackOutputPath = "D:/Manbir";
     // QString javaResPackPath = "";
     // QString bedResPackOutputPath = "";
