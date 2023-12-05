@@ -229,7 +229,8 @@ void Converter::loadData() {
 
         QStringList _ = inputJavaResPackPath.split('/').last().split('.');
         _.removeLast();
-        javaResPackName = _.join('.') + " " + gen_uuid().c_str();
+        javaResPackName = _.join('.');
+        javaResPackName = gen_uuid().c_str();
 
         qDebug() << "[DEBUG] Unzipping input java resource pack into a temperary directory.";
         unzipFile(inputJavaResPackPath, javaResPackTempPath);
@@ -365,7 +366,6 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef idRef) {
         }
         else {
             if (Converter::conversionFunctions.contains(bedEquivelent)) {
-                qDebug() << "Calling:" << bedEquivelent;
                 (this->*conversionFunctions.value(bedEquivelent))(fileInfo.canonicalPath(), bedResPackTempPath);
             } else {
                 std::cout << "[ERROR] Function not found: \"" << bedEquivelent.toStdString().c_str() << "\"" << std::endl;
@@ -403,6 +403,7 @@ void Converter::convertDir(QFileInfo dirInfo, QJsonValueRef idMapRef) {
         else if (info.isDir()) convertDir(info, idMap[info.fileName()]);
     }
 }
+
 cv::Mat Converter::applyTint(const cv::Mat& bgrImg, const cv::Vec3b& color) {
     qDebug() << bgrImg.channels();
 
@@ -443,6 +444,29 @@ cv::Mat Converter::applyTint(const cv::Mat& bgrImg, const cv::Vec3b& color) {
     cv::addWeighted(bgrImg, 0.0, tinted, 1.0, 0.0, resultImg);
 
     return tinted;
+}
+void Converter::BGRA2GRAYAlpha(const cv::Mat& bgraImg, cv::Mat& outputImg) {
+    // split BGRA image channels
+    std::vector<cv::Mat> bgraChannels;
+    cv::split(bgraImg, bgraChannels);
+
+    // extract the alpha channel
+    cv::Mat alphaChannel = bgraChannels.back();
+
+    // convert the BGR channels to grayscale
+    cv::Mat grayImg;
+    cv::cvtColor(bgraImg, grayImg, cv::COLOR_BGRA2GRAY);
+
+    // create a 4-channel output image
+    cv::Mat grayAlphaImg;
+    cv::cvtColor(grayImg, grayAlphaImg, cv::COLOR_GRAY2BGRA);
+
+    std::vector<cv::Mat> grayAlphaChannels;
+    cv::split(grayAlphaImg, grayAlphaChannels);
+
+    // copy the alpha channel to the output
+    cv::Mat outputChannels[4] = {grayAlphaChannels[0], grayAlphaChannels[1], grayAlphaChannels[2], alphaChannel};
+    cv::merge(outputChannels, 4, outputImg);
 }
 
 void Converter::convert_item_clock(QString inputDir, QString outputDir) {
@@ -527,21 +551,13 @@ void Converter::convert_item_leather_boots(QString inputDir, QString outputDir) 
     cv::Mat itemImg = cv::imread((inputDir + "/leather_boots.png").toStdString(), cv::IMREAD_UNCHANGED);
     cv::Mat itemOverlayImg = cv::imread((inputDir + "/leather_boots_overlay.png").toStdString(), cv::IMREAD_UNCHANGED);
 
-    qDebug() << inputDir + "/leather_boots.png";
+    cv::Mat itemOverlayImgGray;
+    BGRA2GRAYAlpha(itemOverlayImg, itemOverlayImgGray);
 
-    cv::Mat idktfigo;
-    cv::resize(itemImg, idktfigo, cv::Size(500, 500), 0, 0, cv::INTER_NEAREST);
-    cv::imshow("Original", idktfigo);
-    cv::resize(itemOverlayImg, idktfigo, cv::Size(500, 500), 0, 0, cv::INTER_NEAREST);
-    cv::imshow("Overlay", idktfigo);
+    cv::Mat result;
+    cv::addWeighted(itemImg, 1, itemOverlayImgGray, 1, 0, result);
 
-    cv::Mat insetImage(itemImg, cv::Rect(0, 0, itemImg.cols, itemImg.rows));
-    itemOverlayImg.copyTo(insetImage);
-
-    cv::resize(itemImg, idktfigo, cv::Size(500, 500), 0, 0, cv::INTER_NEAREST);
-    cv::imshow("Final", idktfigo);
-
-    stbi_write_tga((outputDir + "/leather_boots.tga").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
+    stbi_write_tga((outputDir + "/leather_boots.tga").toStdString().c_str(), result.size().width, result.size().height, result.channels(), result.data);
 }
 void Converter::convert_item_leather_helmet(QString inputDir, QString outputDir){
     outputDir = outputDir + "/textures/items";
@@ -549,10 +565,13 @@ void Converter::convert_item_leather_helmet(QString inputDir, QString outputDir)
     cv::Mat itemImg = cv::imread((inputDir + "/leather_helmet.png").toStdString(), cv::IMREAD_UNCHANGED);
     cv::Mat itemOverlayImg = cv::imread((inputDir + "/leather_helmet_overlay.png").toStdString(), cv::IMREAD_UNCHANGED);
 
-    cv::Mat insetImage(itemImg, cv::Rect(0, 0, itemImg.size().width, itemImg.size().height));
-    itemOverlayImg.copyTo(insetImage);
+    cv::Mat itemOverlayImgGray;
+    BGRA2GRAYAlpha(itemOverlayImg, itemOverlayImgGray);
 
-    stbi_write_tga((outputDir + "/leater_helmet.tga").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
+    cv::Mat result;
+    cv::addWeighted(itemImg, 1, itemOverlayImgGray, 1, 0, result);
+
+    stbi_write_tga((outputDir + "/leather_helmet.tga").toStdString().c_str(), result.size().width, result.size().height, result.channels(), result.data);
 }
 void Converter::convert_item_leather_leggings(QString inputDir, QString outputDir){
     outputDir = outputDir + "/textures/items";
@@ -560,10 +579,13 @@ void Converter::convert_item_leather_leggings(QString inputDir, QString outputDi
     cv::Mat itemImg = cv::imread((inputDir + "/leather_leggings.png").toStdString(), cv::IMREAD_UNCHANGED);
     cv::Mat itemOverlayImg = cv::imread((inputDir + "/leather_leggings_overlay.png").toStdString(), cv::IMREAD_UNCHANGED);
 
-    cv::Mat insetImage(itemImg, cv::Rect(0, 0, itemImg.size().width, itemImg.size().height));
-    itemOverlayImg.copyTo(insetImage);
+    cv::Mat itemOverlayImgGray;
+    BGRA2GRAYAlpha(itemOverlayImg, itemOverlayImgGray);
 
-    stbi_write_tga((outputDir + "/leater_leggings.tga").toStdString().c_str(), itemImg.size().width, itemImg.size().height, itemImg.channels(), itemImg.data);
+    cv::Mat result;
+    cv::addWeighted(itemImg, 1, itemOverlayImgGray, 1, 0, result);
+
+    stbi_write_tga((outputDir + "/leather_leggings.tga").toStdString().c_str(), result.size().width, result.size().height, result.channels(), result.data);
 }
 void Converter::convert_grass(QString inputDir, QString outputDir){
     outputDir = outputDir + "/textures/blocks";
@@ -593,6 +615,3 @@ void Converter::convert_tall_grass_top(QString inputDir, QString outputDir){
     cv::imwrite((outputDir + "/double_plant_grass_carried.png").toStdString(), carried);
     stbi_write_tga((outputDir + "/double_plant_grass_top.tga").toStdString().c_str(), img.size().width, img.size().height, img.channels(), img.data);
 }
-
-
-

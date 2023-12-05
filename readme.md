@@ -1,35 +1,38 @@
 # Minecraft Reource Converter
 This is a simple application that can convert your Minecraft Java resource packs to be used on Minecraft Bedrock i.e. Minecraft PE, Minecraft for XBoxe, Minecraft for PS, Mincraft for Windows 10 and others.
 
-## Symbols
-- In progress, coming soon - 🏃
-- In progress, will take some time - ⏳
-- Plans to add, not in progress - 🚧
-- No plans to add for now - 🤔
-- No plans to add forever - ❌
 
 ## TODOS
-- Carried textures  ⏳
-- All entity textures ⏳
-- Fonts ⏳
+### Symbols
+- In progress, coming soon - 🏃
+- In progress - ⏳
+- Not in progress - 🚧
+- No plans yet - 🤔
+- Never to be added - ❌
+
+### Features
+- Progress bar to show conversion progress. ⏳
+- Better building process. ⏳
+- Better distribution process. 🚧
+- Better documentation. 🚧
+- Installer. 🤔
+
+### Resources
+- Carried textures  🏃
 - Homepage title 🏃
+- Fonts ⏳
 - Paintings ⏳
 - Sounds 🚧
 - Sheep textures 🚧
+- All entity textures 🚧
 - Custom models (optifine equivalent) ❌
-- Progress bar to show conversion progress ⏳
-- Individual items -
-    - Decorated pot
-    - Conduit textures
-    - Potion textures
-    - Bed item texture
     
-
 ## Building from source
-- Prequesties - OpenCV DLLs, libzip and zlib.
-- Open the project using Qt Creator.
-- In the project `.pro` file, change the paths to zlib and libzip include and library directories.
-- Build it using the Qt Creator.
+`Tested using Qt MinGW Kit on Windows 10 and 11.`
+1. Prequesties - OpenCV DLLs, libzip and zlib.
+2. Open the project using Qt Creator.
+3. In the project `.pro` file, change the paths to zlib and libzip include and library directories.
+4. Build it using the Qt Creator.
 
 ## DLLs required for Distribution
 ### Qt Specific
@@ -43,9 +46,10 @@ These are included with the source.
 
 ## Installation
 ### Windows
-1. Download the repositry in anyway
+1. Clone/download the repositry.
 2. Grab the `bin/Windows x64.rar` and extract it to location (generally in `%USER%` folder)
 3. Run the `minecraft-resource-converter.exe`
+4. Additionally, creator a shortcut to the executable on your Desktop, Taskbar or Start Menu.
 
 ## Contributors
 - Me

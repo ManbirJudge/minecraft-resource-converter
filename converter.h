@@ -94,6 +94,7 @@ private:
     void convertDir(QFileInfo dirInfo, QJsonValueRef identityMapRef);
 
     cv::Mat applyTint(const cv::Mat& grayImg, const cv::Vec3b& color);
+    void BGRA2GRAYAlpha(const cv::Mat& rgbaImg, cv::Mat& outputImg);
 
     // on demand speical conversion functions (ODSCFs)
     void convert_item_clock(QString inputDir, QString outputDir);
