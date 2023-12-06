@@ -106,6 +106,8 @@ private:
     void convert_grass(QString inputDir, QString outputDir);
     void convert_grass_block_top(QString inputDir, QString outputDir);
     void convert_tall_grass_top(QString inputDir, QString outputDir);
+    void convert_fern(QString inputDir, QString outputDir);
+    void convert_large_fern_top(QString inputDir, QString outputDir);
 
     QHash<QString, void(Converter::*)(const QString, const QString)> conversionFunctions;
 };

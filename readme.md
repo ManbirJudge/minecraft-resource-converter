@@ -18,13 +18,12 @@ This is a simple application that can convert your Minecraft Java resource packs
 - Installer. 🤔
 
 ### Resources
-- Carried textures  🏃
-- Homepage title 🏃
-- Fonts ⏳
-- Paintings ⏳
+- Homepage title 🚧
+- Fonts 🚧
+- Paintings 🚧
 - Sounds 🚧
 - Sheep textures 🚧
-- All entity textures 🚧
+- Entity textures ⏳
 - Custom models (optifine equivalent) ❌
     
 ## Building from source

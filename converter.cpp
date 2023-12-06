@@ -47,6 +47,8 @@ Converter::Converter(
     conversionFunctions.insert("convert_grass", &Converter::convert_grass);
     conversionFunctions.insert("convert_grass_block_top", &Converter::convert_grass_block_top);
     conversionFunctions.insert("convert_tall_grass_top", &Converter::convert_tall_grass_top);
+    conversionFunctions.insert("convert_fern", &Converter::convert_fern);
+    conversionFunctions.insert("convert_large_fern_top", &Converter::convert_large_fern_top);
 
     if (inputJavaResPackPath.isEmpty() or inputJavaResPackPath.isNull()) throw std::invalid_argument("Input file path was not given.");
     if (outputBedResPackDirPath.isEmpty() or outputBedResPackDirPath.isNull()) throw std::invalid_argument("Output directory was not given.");
@@ -314,66 +316,18 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef idRef) {
     }
     QString id = idRef.toString();
 
-    if (bedIdMap[id].isNull() || bedIdMap[id].isUndefined()) {
+    QJsonValueRef bedInfoRef = bedIdMap[id];
+
+    if (bedInfoRef.isNull() || bedInfoRef.isUndefined()) {
         return;
     }
-    QString bedEquivelent = bedIdMap[id].toString();
 
-    if (bedEquivelent.startsWith("$")) {
-        bedEquivelent = bedEquivelent.remove("$");
+    qDebug() << "[VERBOS] Converting:" << fileInfo.fileName();
 
-        if (bedEquivelent == "convert_meta") {
-            QJsonObject bedManifest = QJsonObject();
-            QJsonObject bedManifestHeader = QJsonObject();
-            QJsonArray bedManifestModules = QJsonArray();
-            QJsonObject bedManifestModule = QJsonObject();
+    if (bedInfoRef.isString()) {
+        QString outputPath = bedInfoRef.toString();
 
-            QJsonArray bedManifestResVersion = QJsonArray();
-            QJsonArray bedManifestMinEngineVersion = QJsonArray();
-
-            bedManifestResVersion.append(1);
-            bedManifestResVersion.append(0);
-            bedManifestResVersion.append(0);
-
-            bedManifestMinEngineVersion.append(1);
-            bedManifestMinEngineVersion.append(19);
-            bedManifestMinEngineVersion.append(40);
-
-            bedManifestModule.insert("description", javaResPackDesc);
-            bedManifestModule.insert("type", "resources");
-            bedManifestModule.insert("uuid", QString(gen_uuid().c_str()));
-            bedManifestModule.insert("version", bedManifestResVersion);
-
-            bedManifestModules.append(bedManifestModule);
-
-            bedManifestHeader.insert("description", javaResPackDesc);
-            bedManifestHeader.insert("name", javaResPackName);
-            if (bedResPackMCMetaUUIDType == 0) bedManifestHeader.insert("uuid", QString(gen_uuid().c_str()));
-            else bedManifestHeader.insert("uuid", QString(gen_uuid().c_str()));
-            bedManifestHeader.insert("version", bedManifestResVersion);
-            bedManifestHeader.insert("min_engine_version", bedManifestMinEngineVersion);
-
-            bedManifest.insert("format_version", 2);
-            bedManifest.insert("header", bedManifestHeader);
-            bedManifest.insert("modules", bedManifestModules);
-
-            QFile bedManifestFile = QFile(bedResPackTempPath + "/manifest.json");
-            bedManifestFile.open(QFile::WriteOnly);
-
-            bedManifestFile.write(QJsonDocument(bedManifest).toJson());
-
-            bedManifestFile.close();
-        }
-        else {
-            if (Converter::conversionFunctions.contains(bedEquivelent)) {
-                (this->*conversionFunctions.value(bedEquivelent))(fileInfo.canonicalPath(), bedResPackTempPath);
-            } else {
-                std::cout << "[ERROR] Function not found: \"" << bedEquivelent.toStdString().c_str() << "\"" << std::endl;
-                return;
-            }
-        }
-    } else {
-        QStringList newPaths = bedEquivelent.split("%and%");
+        QStringList newPaths = outputPath.split("%and%");
 
         cv::Mat resImg = cv::imread(fileInfo.canonicalFilePath().toStdString(), cv::IMREAD_UNCHANGED);
         if (resImg.empty()) {
@@ -383,13 +337,103 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef idRef) {
 
         foreach(QString newPath, newPaths) {
             QDir().mkpath(bedResPackTempPath + "/" + newPath.split('/').first(newPath.split('/').length() - 1).join('/'));
-            std::string resImgFormat = newPath.split('.').last().toUpper().toStdString();
+            QString resImgFormat = newPath.split('.').last().toUpper();
 
             if (resImgFormat == "TGA") {
                 int CHANNELS = resImg.channels();
                 stbi_write_tga((bedResPackTempPath + "/" + newPath).toStdString().c_str(), resImg.size().width, resImg.size().height, CHANNELS, resImg.data);
             } else {
                 cv::imwrite((bedResPackTempPath + "/" + newPath).toStdString(), resImg);
+            }
+        }
+    } else {
+        QJsonObject bedInfo = bedInfoRef.toObject();
+
+        if (bedInfo.contains("function")) {
+            QString function = bedInfo["function"].toString();
+
+            if (function == "convert_meta") {
+                QJsonObject bedManifest = QJsonObject();
+                QJsonObject bedManifestHeader = QJsonObject();
+                QJsonArray bedManifestModules = QJsonArray();
+                QJsonObject bedManifestModule = QJsonObject();
+
+                QJsonArray bedManifestResVersion = QJsonArray();
+                QJsonArray bedManifestMinEngineVersion = QJsonArray();
+
+                bedManifestResVersion.append(1);
+                bedManifestResVersion.append(0);
+                bedManifestResVersion.append(0);
+
+                bedManifestMinEngineVersion.append(1);
+                bedManifestMinEngineVersion.append(19);
+                bedManifestMinEngineVersion.append(40);
+
+                bedManifestModule.insert("description", javaResPackDesc);
+                bedManifestModule.insert("type", "resources");
+                bedManifestModule.insert("uuid", QString(gen_uuid().c_str()));
+                bedManifestModule.insert("version", bedManifestResVersion);
+
+                bedManifestModules.append(bedManifestModule);
+
+                bedManifestHeader.insert("description", javaResPackDesc);
+                bedManifestHeader.insert("name", javaResPackName);
+                if (bedResPackMCMetaUUIDType == 0) bedManifestHeader.insert("uuid", QString(gen_uuid().c_str()));
+                else bedManifestHeader.insert("uuid", QString(gen_uuid().c_str()));
+                bedManifestHeader.insert("version", bedManifestResVersion);
+                bedManifestHeader.insert("min_engine_version", bedManifestMinEngineVersion);
+
+                bedManifest.insert("format_version", 2);
+                bedManifest.insert("header", bedManifestHeader);
+                bedManifest.insert("modules", bedManifestModules);
+
+                QFile bedManifestFile = QFile(bedResPackTempPath + "/manifest.json");
+                bedManifestFile.open(QFile::WriteOnly);
+
+                bedManifestFile.write(QJsonDocument(bedManifest).toJson());
+
+                bedManifestFile.close();
+            }
+            else {
+                if (Converter::conversionFunctions.contains(function)) {
+                    (this->*conversionFunctions.value(function))(fileInfo.canonicalPath(), bedResPackTempPath);
+                } else {
+                    std::cout << "[ERROR] Function not found: \"" << function.toStdString() << "\"" << std::endl;
+                    return;
+                }
+            }
+        } else {
+            QString outputPath = bedInfo["path"].toString();
+            int readMode = cv::IMREAD_UNCHANGED;
+
+            if (bedInfo.contains("read-mode")) {
+                int _ = bedInfo["read-mode"].toInt();
+
+                if (_ == 0) {
+                    readMode = cv::IMREAD_COLOR;
+                } else if (_ == 1) {
+                    readMode = cv::IMREAD_ANYCOLOR;
+                }
+            }
+
+            QStringList newPaths = outputPath.split("%and%");
+
+            cv::Mat resImg = cv::imread(fileInfo.canonicalFilePath().toStdString(), readMode);
+            if (resImg.empty()) {
+                qDebug() << "Can not open image:" << fileInfo.canonicalFilePath();
+                return;
+            }
+
+            foreach(QString newPath, newPaths) {
+                QDir().mkpath(bedResPackTempPath + "/" + newPath.split('/').first(newPath.split('/').length() - 1).join('/'));
+                QString resImgFormat = newPath.split('.').last().toUpper();
+
+                if (resImgFormat == "TGA") {
+                    int CHANNELS = resImg.channels();
+                    stbi_write_tga((bedResPackTempPath + "/" + newPath).toStdString().c_str(), resImg.size().width, resImg.size().height, CHANNELS, resImg.data);
+                } else {
+                    cv::imwrite((bedResPackTempPath + "/" + newPath).toStdString(), resImg);
+                }
             }
         }
     }
@@ -614,4 +658,22 @@ void Converter::convert_tall_grass_top(QString inputDir, QString outputDir){
 
     cv::imwrite((outputDir + "/double_plant_grass_carried.png").toStdString(), carried);
     stbi_write_tga((outputDir + "/double_plant_grass_top.tga").toStdString().c_str(), img.size().width, img.size().height, img.channels(), img.data);
+}
+void Converter::convert_fern(QString inputDir, QString outputDir) {
+    outputDir = outputDir + "/textures/blocks";
+    cv::Mat img = cv::imread((inputDir + "/fern.png").toStdString(), cv::IMREAD_UNCHANGED);
+
+    cv::Mat carried = applyTint(img, grassTint);
+
+    stbi_write_tga((outputDir + "/fern.tga").toStdString().c_str(), img.size().width, img.size().height, img.channels(), img.data);
+    stbi_write_tga((outputDir + "/fern_carried.tga").toStdString().c_str(), carried.size().width, carried.size().height, carried.channels(), carried.data);
+}
+void Converter::convert_large_fern_top(QString inputDir, QString outputDir) {
+    outputDir = outputDir + "/textures/blocks";
+    cv::Mat img = cv::imread((inputDir + "/large_fern_top.png").toStdString(), cv::IMREAD_UNCHANGED);
+
+    cv::Mat carried = applyTint(img, grassTint);
+
+    stbi_write_tga((outputDir + "/double_plant_fern_top.tga").toStdString().c_str(), img.size().width, img.size().height, img.channels(), img.data);
+    cv::imwrite((outputDir + "/double_plant_fern_carried.png").toStdString(), carried);
 }

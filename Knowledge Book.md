@@ -1,4 +1,15 @@
 # Knowledge Book
+## ID Map Format
+### Java ID Map Format
+### Bedrock ID Map Format
+- If value of a key is a string, its the output path.
+- If value of a key is an object, it contains -
+    - **Output path**
+    - Read mode
+- Read modes -
+    - `0` - RGB (BGR for OpenCV)
+    - `1` - RGBA (BGRA for OpenCV)
+    - Default - Decided by OpenCV (subject to change to `0` by default)
 ## Resource pack format
 It is an integer value in pack config of Minecraft Java resource pack which relates to the mincraft (java) version  for which the resource pack is made.
 ### Values

@@ -43,26 +43,26 @@ def apply_tint(rgb_img, color):
 
 # Load grayscale image
 # img_path = input('Image path: ')
-img_path = r'D:\Manbir\Faithful 32x Java\assets\minecraft\textures\block\grass_block_top.png'
+img_path = r'D:\Manbir\Faithful 32x Java\assets\minecraft\textures\block\fern.png'
 
 img_gray = cv2.imread(img_path)
-tint_color_1 = (147, 223, 183)
-tint_color_2 = (183, 223, 147)
+tint_color_1 = (80, 91, 84)
+tint_color_2 = (84, 91, 80)
 
 img_tinted_1 = apply_tint(img_gray, np.array(tint_color_1))
 img_tinted_2 = apply_tint(img_gray, np.array(tint_color_2))
 
 # Display the result
 cv2.imshow(
-    'Original', 
+    'Original',
     cv2.resize(img_gray, (500, 500), interpolation=cv2.INTER_NEAREST)
 )
 cv2.imshow(
-    'Tinted 1', 
-    cv2.resize( img_tinted_1, (500, 500), interpolation=cv2.INTER_NEAREST)
+    'Tinted 1',
+    cv2.resize(img_tinted_1, (500, 500), interpolation=cv2.INTER_NEAREST)
 )
 cv2.imshow(
-    'Tinted 2', 
+    'Tinted 2',
     cv2.resize(img_tinted_2, (500, 500), interpolation=cv2.INTER_NEAREST)
 )
 
