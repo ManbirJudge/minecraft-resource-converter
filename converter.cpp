@@ -49,6 +49,7 @@ Converter::Converter(
     conversionFunctions.insert("convert_tall_grass_top", &Converter::convert_tall_grass_top);
     conversionFunctions.insert("convert_fern", &Converter::convert_fern);
     conversionFunctions.insert("convert_large_fern_top", &Converter::convert_large_fern_top);
+    conversionFunctions.insert("convert_lily_pad", &Converter::convert_lily_pad);
 
     if (inputJavaResPackPath.isEmpty() or inputJavaResPackPath.isNull()) throw std::invalid_argument("Input file path was not given.");
     if (outputBedResPackDirPath.isEmpty() or outputBedResPackDirPath.isNull()) throw std::invalid_argument("Output directory was not given.");
@@ -74,7 +75,7 @@ void Converter::unzipFile(QString srcFilePath_, QString destinationDirectoryPath
 
     if (zipArchive == NULL) {
         zip_error_to_str(bufferStr, sizeof(bufferStr), error, errno);
-        std::cout << "[ERROR] Can not open the zip file: " << error <<  ":\n" << bufferStr;
+        Log::e(QString("Can not open the zip file: ") + QString::number(error) + ":\n" + bufferStr);
     }
 
     for (int index = 0; index < zip_get_num_entries(zipArchive, 0); index++) {
@@ -88,13 +89,13 @@ void Converter::unzipFile(QString srcFilePath_, QString destinationDirectoryPath
 
                 zippedFile = zip_fopen_index(zipArchive, index, 0);
                 if (zippedFile == NULL) {
-                    qDebug() << "[ERROR] Can not open the file in zip archive.";
+                    Log::e("Can not open the file in zip archive.");
                     continue;
                 }
 
                 fileHandle = open((destinationDirectoryPath + "/" + zippedFileStats.name).c_str(), O_RDWR | O_TRUNC | O_CREAT | O_BINARY, 0644);
                 if (fileHandle < 0) {
-                    qDebug() << "[ERROR] Can not create the file (into which zipped data is to be extracted).";
+                    Log::e("Can not create the file (into which zipped data is to be extracted).");
                     continue;
                 }
 
@@ -106,7 +107,7 @@ void Converter::unzipFile(QString srcFilePath_, QString destinationDirectoryPath
                     }
 
                     if (fileDataLength < 0) {
-                        qDebug() << "[ERROR] Can not read the zipped file.";
+                        Log::e("Can not read the zipped file.");
                         exit(1);
                     }
 
@@ -117,12 +118,12 @@ void Converter::unzipFile(QString srcFilePath_, QString destinationDirectoryPath
                 zip_fclose(zippedFile);
             }
         } else {
-            qDebug() << "IDK what is here 🫥.";
+            Log::i("IDK what is here 🫥.");
         }
     }
 
     if (zip_close(zipArchive) == -1) {
-        qDebug() << "[ERROR] Cannot close the zip file.";
+        Log::e("Cannot close the zip file.");
     }
 }
 void Converter::zipDir(QString srcDirPath_, QString zippedFilePath_) {
@@ -137,7 +138,7 @@ void Converter::zipDir(QString srcDirPath_, QString zippedFilePath_) {
     zip_t* zipArchive = zip_open(zippedFilePath.c_str(), ZIP_CREATE, &error);
     if (zipArchive == NULL) {
         zip_error_to_str(bufferStr, sizeof(bufferStr), error, errno);
-        std::cout << "[ERROR] Can not create the zip file: " << error <<  ":\n" << bufferStr;
+        Log::e(QString("Can not open the zip file: ") + QString::number(error) + ":\n" + bufferStr);
     }
 
     zip_source_t* zipSource;
@@ -146,7 +147,7 @@ void Converter::zipDir(QString srcDirPath_, QString zippedFilePath_) {
         if (fileInfo.isFile()) {
             zipSource = zip_source_file(zipArchive, fileInfo.canonicalFilePath().toStdString().c_str(), 0, 0);
             if (zipSource == NULL) {
-                qDebug() << "[ERROR] Failed to create source buffer for" << fileInfo.fileName() + ".";
+                Log::w("Failed to create source buffer for " + fileInfo.fileName() + ".");
                 continue;
             }
 
@@ -157,7 +158,7 @@ void Converter::zipDir(QString srcDirPath_, QString zippedFilePath_) {
                 ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8
             );
             if (fileIndex < 0) {
-                qDebug() << "[ERROR] Failed to add" << fileInfo.fileName() << "to archive.";
+                Log::w("Failed to add " + fileInfo.fileName() + " to archive.");
                 continue;
             }
         } else if (fileInfo.isDir()) {
@@ -166,7 +167,7 @@ void Converter::zipDir(QString srcDirPath_, QString zippedFilePath_) {
     }
 
     if (zip_close(zipArchive) == -1) {
-        qDebug() << "[DEBUG] Cannot close the zip file.";
+        Log::w("Cannot close the zip file.");
     }
 }
 void Converter::addDirToZip(zip_t* zipArchive, zip_source_t* zipSource, QFileInfo srcDirInfo, QDir rootSrcDir) {
@@ -220,28 +221,29 @@ void Converter::copyDir(QString srcPath, QString dstPath) {
 void Converter::loadData() {
     // making temperary directory
     QDir tmpDir = QDir("tmp");
-    qDebug() << "[DEBUG] Removed temperary directory with result:" << tmpDir.removeRecursively();
+    Log::i("Removed old temperary directory with result " + QString::number(tmpDir.removeRecursively()));
+
     QDir().mkdir("tmp");
 
     // loading input resource pack into temperary directory
     javaResPackTempPath = tmpDir.path() + "/java-resource-pack";
 
     if (inputJavaResPackType == 0) {
-        qDebug() << "[DEBUG] Input resource pack type is zip file.";
+        Log::i("Input resource pack type is zip file.");
 
         QStringList _ = inputJavaResPackPath.split('/').last().split('.');
         _.removeLast();
         javaResPackName = _.join('.');
         javaResPackName = gen_uuid().c_str();
 
-        qDebug() << "[DEBUG] Unzipping input java resource pack into a temperary directory.";
+        Log::i("Unzipping input java resource pack into a temperary directory.");
         unzipFile(inputJavaResPackPath, javaResPackTempPath);
     } else {
-        qDebug() << "[DEBUG] Input resource pack type is folder.";
+        Log::i("Input resource pack type is folder.");
 
         javaResPackName = inputJavaResPackPath.split('/').last();
 
-        qDebug() << "[DEBUG] Coppying input resource pack to temperary directory.";
+        Log::i("Coppying input resource pack to temperary directory.");
         copyDir(inputJavaResPackPath, javaResPackTempPath);
     }
 
@@ -287,19 +289,19 @@ void Converter::loadIdMaps() {
 }
 
 void Converter::startConversion() {
-    qDebug() << "[DEBUG] Starting conversion.";
+    Log::i("Starting conversion.");
 
     convert();
 
     if (outputBedResPackType == 0) {
-        qDebug() << "[DEBUG] Zipping the output resource pack into .mcpack zip archive.";
+        Log::i("Zipping the output resource pack into .mcpack zip archive.");
         zipDir(bedResPackTempPath, outputBedResPackDirPath + "/" + javaResPackName + " (converted).mcpack");
     } else {
-        qDebug() << "[DEBUG] Copying the output resource pack to output directory.";
+        Log::i("Copying the output resource pack to output directory.");
         copyDir(bedResPackTempPath, outputBedResPackDirPath + "/" + javaResPackName + " (converted)");
     }
 
-    qDebug() << "[DEBUG] Conversion done.";
+    Log::s("Conversion done.");
 }
 
 void Converter::convert() {
@@ -319,10 +321,11 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef idRef) {
     QJsonValueRef bedInfoRef = bedIdMap[id];
 
     if (bedInfoRef.isNull() || bedInfoRef.isUndefined()) {
+        if (!id.startsWith("particle")) {
+            Log::w("ID not present in Bedrock ID Map: " + id);
+        }
         return;
     }
-
-    qDebug() << "[VERBOS] Converting:" << fileInfo.fileName();
 
     if (bedInfoRef.isString()) {
         QString outputPath = bedInfoRef.toString();
@@ -331,7 +334,7 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef idRef) {
 
         cv::Mat resImg = cv::imread(fileInfo.canonicalFilePath().toStdString(), cv::IMREAD_UNCHANGED);
         if (resImg.empty()) {
-            qDebug() << "Can not open image:" << fileInfo.canonicalFilePath();
+            Log::w("Can not open image: " + fileInfo.canonicalFilePath());
             return;
         }
 
@@ -398,11 +401,11 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef idRef) {
                 if (Converter::conversionFunctions.contains(function)) {
                     (this->*conversionFunctions.value(function))(fileInfo.canonicalPath(), bedResPackTempPath);
                 } else {
-                    std::cout << "[ERROR] Function not found: \"" << function.toStdString() << "\"" << std::endl;
+                    Log::w(QString("Function not found: ") + function + "\"");
                     return;
                 }
             }
-        } else {
+        } else if (bedInfo.contains("path")) {
             QString outputPath = bedInfo["path"].toString();
             int readMode = cv::IMREAD_UNCHANGED;
 
@@ -420,7 +423,7 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef idRef) {
 
             cv::Mat resImg = cv::imread(fileInfo.canonicalFilePath().toStdString(), readMode);
             if (resImg.empty()) {
-                qDebug() << "Can not open image:" << fileInfo.canonicalFilePath();
+                Log::w("Can not open image: " + fileInfo.canonicalFilePath());
                 return;
             }
 
@@ -435,6 +438,8 @@ void Converter::convertFile(QFileInfo fileInfo, QJsonValueRef idRef) {
                     cv::imwrite((bedResPackTempPath + "/" + newPath).toStdString(), resImg);
                 }
             }
+        } else {
+            Log::d("Information empty in Bedrock ID Map: " + id);
         }
     }
 }
@@ -449,8 +454,6 @@ void Converter::convertDir(QFileInfo dirInfo, QJsonValueRef idMapRef) {
 }
 
 cv::Mat Converter::applyTint(const cv::Mat& bgrImg, const cv::Vec3b& color) {
-    qDebug() << bgrImg.channels();
-
     // gray to BGR
     cv::Mat grayImg;
     cv::cvtColor(bgrImg, grayImg, cv::COLOR_BGR2GRAY);
@@ -676,4 +679,13 @@ void Converter::convert_large_fern_top(QString inputDir, QString outputDir) {
 
     stbi_write_tga((outputDir + "/double_plant_fern_top.tga").toStdString().c_str(), img.size().width, img.size().height, img.channels(), img.data);
     cv::imwrite((outputDir + "/double_plant_fern_carried.png").toStdString(), carried);
+}
+void Converter::convert_lily_pad(QString inputDir, QString outputDir) {
+    outputDir = outputDir + "/textures/blocks";
+    cv::Mat img = cv::imread((inputDir + "/lily_pad.png").toStdString(), cv::IMREAD_UNCHANGED);
+
+    cv::Mat carried = applyTint(img, grassTint);
+
+    cv::imwrite((outputDir + "/waterlily.png").toStdString(), img);
+    // cv::imwrite((outputDir + "/carried_waterlily.png").toStdString(), carried);
 }

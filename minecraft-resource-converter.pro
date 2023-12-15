@@ -7,12 +7,14 @@ CONFIG += c++17
 
 SOURCES += \
     converter.cpp \
+    log.cpp \
     main.cpp \
     mainwindow.cpp \
     settings_dialog.cpp
 
 HEADERS += \
     converter.h \
+    log.h \
     mainwindow.h \
     settings_dialog.h \
     stb_image_write.h
